@@ -1,0 +1,6 @@
+[package]
+name = "rustback"
+version = "0.1.0"
+authors = ["Cyryl Płotnicki <cyplo@cyplo.net>"]
+
+[dependencies]
