@@ -4,3 +4,6 @@ version = "0.1.0"
 authors = ["Cyryl Płotnicki <cyplo@cyplo.net>"]
 
 [dependencies]
+
+[dev-dependencies]
+tempfile = "3.0.3"
