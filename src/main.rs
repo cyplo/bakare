@@ -1,11 +1,13 @@
+extern crate core;
 extern crate crypto;
 extern crate dir_diff;
 extern crate tempfile;
 extern crate walkdir;
 
+use std::fs;
+use std::io;
 use std::path::Path;
 use walkdir::DirEntry;
-use walkdir::Error;
 use walkdir::WalkDir;
 
 struct BackupEngine<'a> {
@@ -21,29 +23,69 @@ impl<'a> BackupEngine<'a> {
         }
     }
 
-    fn backup(&self) -> Result<(), Error> {
+    fn backup(&self) -> Result<(), io::Error> {
         let walker = WalkDir::new(self.source_path);
         for maybe_entry in walker {
             match maybe_entry {
-                Ok(entry) => self.process_entry(entry),
-                Err(error) => return Err(error),
+                Ok(entry) => {
+                    if entry.path() != self.source_path {
+                        self.process_entry(entry)?;
+                    }
+                }
+                Err(error) => return Err(error.into()),
             }
         }
         Ok(())
     }
 
-    fn process_entry(&self, entry: DirEntry) {
-        println!("{:?}", entry.path());
+    fn process_entry(&self, entry: DirEntry) -> Result<(), io::Error> {
+        if entry.file_type().is_dir() {
+            fs::create_dir(self.repository_path.join(entry.file_name()))?;
+        }
+        if entry.file_type().is_file() {
+            fs::copy(entry.path(), self.repository_path.join(entry.file_name()))?;
+        }
+        Ok(())
     }
 }
 
-struct RestoreEngine;
-impl RestoreEngine {
-    fn new(repository_path: &Path, target_path: &Path) -> Self {
-        RestoreEngine {}
+struct RestoreEngine<'a> {
+    repository_path: &'a Path,
+    target_path: &'a Path,
+}
+
+impl<'a> RestoreEngine<'a> {
+    fn new(repository_path: &'a Path, target_path: &'a Path) -> Self {
+        RestoreEngine {
+            repository_path,
+            target_path,
+        }
     }
 
-    fn restore(&self) {}
+    fn restore(&self) -> Result<(), io::Error> {
+        let walker = WalkDir::new(self.repository_path);
+        for maybe_entry in walker {
+            match maybe_entry {
+                Ok(entry) => {
+                    if entry.path() != self.repository_path {
+                        self.process_entry(entry)?;
+                    }
+                }
+                Err(error) => return Err(error.into()),
+            }
+        }
+        Ok(())
+    }
+
+    fn process_entry(&self, entry: DirEntry) -> Result<(), io::Error> {
+        if entry.file_type().is_dir() {
+            fs::create_dir(self.target_path.join(entry.file_name()))?;
+        }
+        if entry.file_type().is_file() {
+            fs::copy(entry.path(), self.target_path.join(entry.file_name()))?;
+        }
+        Ok(())
+    }
 }
 
 mod rustback {
@@ -55,13 +97,10 @@ mod rustback {
 
         use super::*;
         use dir_diff::is_different;
-        use std::fs::write;
         use std::fs::File;
         use std::io::Error;
-        use std::io::{self, Write};
+        use std::io::Write;
         use tempfile::tempdir;
-        use tempfile::tempfile_in;
-        use tempfile::TempDir;
 
         #[test]
         fn be_able_to_restore_backed_up_files() -> Result<(), Error> {
@@ -73,11 +112,11 @@ mod rustback {
 
             let repository = tempdir()?;
             let backup_engine = BackupEngine::new(&source.path(), &repository.path());
-            backup_engine.backup();
+            backup_engine.backup()?;
 
             let restore_target = tempdir()?;
             let restore_engine = RestoreEngine::new(&repository.path(), &restore_target.path());
-            restore_engine.restore();
+            restore_engine.restore()?;
 
             let are_source_and_target_different =
                 is_different(&source.path(), &restore_target.path()).unwrap();
