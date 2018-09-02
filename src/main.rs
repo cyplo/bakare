@@ -1,6 +1,7 @@
 extern crate core;
-extern crate crypto;
+#[cfg(test)]
 extern crate dir_diff;
+#[cfg(test)]
 extern crate tempfile;
 extern crate walkdir;
 
@@ -29,7 +30,7 @@ impl<'a> BackupEngine<'a> {
             match maybe_entry {
                 Ok(entry) => {
                     if entry.path() != self.source_path {
-                        self.process_entry(entry)?;
+                        self.process_entry(&entry)?;
                     }
                 }
                 Err(error) => return Err(error.into()),
@@ -38,7 +39,7 @@ impl<'a> BackupEngine<'a> {
         Ok(())
     }
 
-    fn process_entry(&self, entry: DirEntry) -> Result<(), io::Error> {
+    fn process_entry(&self, entry: &DirEntry) -> Result<(), io::Error> {
         if entry.file_type().is_dir() {
             fs::create_dir(self.repository_path.join(entry.file_name()))?;
         }
@@ -68,7 +69,7 @@ impl<'a> RestoreEngine<'a> {
             match maybe_entry {
                 Ok(entry) => {
                     if entry.path() != self.repository_path {
-                        self.process_entry(entry)?;
+                        self.process_entry(&entry)?;
                     }
                 }
                 Err(error) => return Err(error.into()),
@@ -77,7 +78,7 @@ impl<'a> RestoreEngine<'a> {
         Ok(())
     }
 
-    fn process_entry(&self, entry: DirEntry) -> Result<(), io::Error> {
+    fn process_entry(&self, entry: &DirEntry) -> Result<(), io::Error> {
         if entry.file_type().is_dir() {
             fs::create_dir(self.target_path.join(entry.file_name()))?;
         }
@@ -88,19 +89,20 @@ impl<'a> RestoreEngine<'a> {
     }
 }
 
-mod rustback {
+fn main() {}
 
-    use super::*;
+mod rustback {
 
     #[cfg(test)]
     mod should {
 
-        use super::*;
         use dir_diff::is_different;
         use std::fs::File;
         use std::io::Error;
         use std::io::Write;
         use tempfile::tempdir;
+        use BackupEngine;
+        use RestoreEngine;
 
         #[test]
         fn be_able_to_restore_backed_up_files() -> Result<(), Error> {
