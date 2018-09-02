@@ -10,3 +10,4 @@ Implementation:
 * hash -> file and file -> hash indexes
 * use vfs to store both db and data files, create a new one when old one too big
 * start with simple read file -> hash -> encrypt -?> send
+* test with randomly created dirs and files, with property based tests and fuzzer

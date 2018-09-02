@@ -1,4 +1,26 @@
+extern crate crypto;
 extern crate tempfile;
+extern crate dir_diff;
+
+use std::path::Path;
+
+struct BackupEngine;
+impl BackupEngine {
+    fn new(path: &Path) -> Self {
+        BackupEngine {}
+    }
+
+    fn backup(&self) {}
+}
+
+struct RestoreEngine;
+impl RestoreEngine {
+    fn new(path: &Path) -> Self {
+        RestoreEngine {}
+    }
+
+    fn restore(&self) {}
+}
 
 mod rustback {
 
@@ -8,52 +30,33 @@ mod rustback {
     mod should {
 
         use super::*;
-        use tempfile::tempdir;
         use std::fs::File;
-        use std::io::{self, Write};
         use std::io::Error;
+        use std::io::{self, Write};
+        use tempfile::tempdir;
+        use tempfile::tempfile_in;
+        use tempfile::TempDir;
+        use dir_diff::is_different;
 
         #[test]
         fn be_able_to_restore_backed_up_files() -> Result<(), Error> {
+            let source = tempdir()?;
+            File::create(source.path().join("first"))?;
+            File::create(source.path().join("second"))?;
+            File::create(source.path().join("third"))?;
 
-            let dir = tempdir()?;
+            let backup_engine = BackupEngine::new(&source.path());
+            backup_engine.backup();
 
-            let file_path = dir.path().join("my-temporary-note.txt");
-            let mut file = File::create(file_path)?;
-            writeln!(file, "Brian was here. Briefly.")?;
+            let destination = tempdir()?;
+            let restore_engine = RestoreEngine::new(&destination.path());
+            restore_engine.restore();
 
-            // create a new temp folder
-            // add 3 files, two identical content
-            // remember file hashes
-            let source_path = dir.path();
-
-            //create a new temp folder
-            let destination_path = "";
-            //let walker = FilesystemWalker::new(source_path);
-            //let engine = Engine::with(walker);
-
-            //engine.backup();
-            //engine.restore(destination_path);
-
-            // assert on number and hashes of files
+            let is_source_and_destination_different = is_different(&source.path(), &destination.path()).unwrap();
+            assert!(!is_source_and_destination_different);
             Ok(())
         }
-
     }
 
 }
 
-mod index {
-    use super::*;
-
-    #[cfg(test)]
-    mod should {
-
-        #[test]
-        fn recognize_files_of_same_contents() {
-            assert!(false);
-        }
-
-    }
-
-}
