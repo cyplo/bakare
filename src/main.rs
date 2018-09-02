@@ -37,13 +37,15 @@ mod rustback {
         use tempfile::tempfile_in;
         use tempfile::TempDir;
         use dir_diff::is_different;
+        use std::fs::write;
 
         #[test]
         fn be_able_to_restore_backed_up_files() -> Result<(), Error> {
             let source = tempdir()?;
-            File::create(source.path().join("first"))?;
-            File::create(source.path().join("second"))?;
-            File::create(source.path().join("third"))?;
+
+            File::create(source.path().join("first"))?.write_all("some contents".as_bytes())?;
+            File::create(source.path().join("second"))?.write_all("some contents".as_bytes())?;
+            File::create(source.path().join("third"))?.write_all("some other contents".as_bytes())?;
 
             let backup_engine = BackupEngine::new(&source.path());
             backup_engine.backup();
