@@ -6,7 +6,7 @@ use std::path::Path;
 
 struct BackupEngine;
 impl BackupEngine {
-    fn new(path: &Path) -> Self {
+    fn new(source_path: &Path, repository_path: &Path) -> Self {
         BackupEngine {}
     }
 
@@ -15,7 +15,7 @@ impl BackupEngine {
 
 struct RestoreEngine;
 impl RestoreEngine {
-    fn new(path: &Path) -> Self {
+    fn new(repository_path: &Path, target_path: &Path) -> Self {
         RestoreEngine {}
     }
 
@@ -47,14 +47,15 @@ mod rustback {
             File::create(source.path().join("second"))?.write_all("some contents".as_bytes())?;
             File::create(source.path().join("third"))?.write_all("some other contents".as_bytes())?;
 
-            let backup_engine = BackupEngine::new(&source.path());
+            let repository = tempdir()?;
+            let backup_engine = BackupEngine::new(&source.path(), &repository.path());
             backup_engine.backup();
 
-            let destination = tempdir()?;
-            let restore_engine = RestoreEngine::new(&destination.path());
+            let restore_target = tempdir()?;
+            let restore_engine = RestoreEngine::new(&repository.path(), &restore_target.path());
             restore_engine.restore();
 
-            let is_source_and_destination_different = is_different(&source.path(), &destination.path()).unwrap();
+            let is_source_and_destination_different = is_different(&source.path(), &restore_target.path()).unwrap();
             assert!(!is_source_and_destination_different);
             Ok(())
         }
