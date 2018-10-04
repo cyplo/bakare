@@ -103,9 +103,10 @@ mod rustback {
         use tempfile::tempdir;
         use BackupEngine;
         use RestoreEngine;
+        use std::path::Path;
 
         #[test]
-        fn be_able_to_restore_backed_up_files() -> Result<(), Error> {
+        fn restore_backed_up_files() -> Result<(), Error> {
             let source = tempdir()?;
 
             File::create(source.path().join("first"))?.write_all("some contents".as_bytes())?;
@@ -113,18 +114,23 @@ mod rustback {
             File::create(source.path().join("third"))?.write_all("some other contents".as_bytes())?;
 
             let repository = tempdir()?;
-            let backup_engine = BackupEngine::new(&source.path(), &repository.path());
+
+            is_same_after_restore(source.path(), repository.path())
+        }
+
+
+        fn is_same_after_restore(source_path: &Path, repository_path: &Path) -> Result<(), Error> {
+            let backup_engine = BackupEngine::new(source_path, repository_path);
             backup_engine.backup()?;
 
             let restore_target = tempdir()?;
-            let restore_engine = RestoreEngine::new(&repository.path(), &restore_target.path());
+            let restore_engine = RestoreEngine::new(repository_path, &restore_target.path());
             restore_engine.restore()?;
 
-            let are_source_and_target_different = is_different(&source.path(), &restore_target.path()).unwrap();
+            let are_source_and_target_different = is_different(source_path, &restore_target.path()).unwrap();
             assert!(!are_source_and_target_different);
             Ok(())
         }
-
     }
 
 }
