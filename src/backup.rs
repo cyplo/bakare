@@ -1,6 +1,7 @@
 use std::fs;
 use std::io;
 use std::path::Path;
+use storage::Version;
 use walkdir::DirEntry;
 use walkdir::WalkDir;
 
@@ -28,11 +29,15 @@ impl<'a> Engine<'a> {
         Ok(())
     }
 
-    pub fn file_version(&self, path: &Path) -> u64 {
-        0
+    pub fn file_version(&self, path: &Path) -> Version {
+        Version(0)
     }
 
     fn process_entry(&self, entry: &DirEntry) -> Result<(), io::Error> {
+        // TODO: remember entry in index
+
+        // TODO: store file data
+
         if entry.file_type().is_dir() {
             fs::create_dir(self.repository_path.join(entry.file_name()))?;
         }
