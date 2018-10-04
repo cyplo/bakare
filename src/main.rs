@@ -123,15 +123,16 @@ mod rustback {
         use std::path::Path;
         use RestoreDescriptor;
         use std::io::Read;
+        use tempfile::TempDir;
 
         #[test]
         fn restore_backed_up_files() -> Result<(), Error> {
-            let source = tempdir()?;
+            let source = Source::new()?;
             let repository = tempdir()?;
 
-            File::create(source.path().join("first"))?.write_all("some contents".as_bytes())?;
-            File::create(source.path().join("second"))?.write_all("some contents".as_bytes())?;
-            File::create(source.path().join("third"))?.write_all("some other contents".as_bytes())?;
+            source.write_text_to_file("first", "some contents");
+            source.write_text_to_file("second", "some contents");
+            source.write_text_to_file("third", "some other contents");
 
             is_same_after_restore(source.path(), repository.path())
         }
@@ -141,11 +142,11 @@ mod rustback {
             let source = tempdir()?;
             let repository = tempdir()?;
             let backup_engine = BackupEngine::new(source.path(), repository.path());
-            let path = "first";
+            let path = "some path";
             let new_file_contents = "totally new contents";
             let restore_target = tempdir()?;
             let restore_engine = RestoreEngine::new(repository.path(), &restore_target.path());
-            let old_contents = "some contents";
+            let old_contents = "some old contents";
 
             File::create(source.path().join(path))?.write_all(old_contents.as_bytes())?;
             backup_engine.backup()?;
@@ -164,6 +165,7 @@ mod rustback {
             Ok(())
         }
 
+
         fn is_same_after_restore(source_path: &Path, repository_path: &Path) -> Result<(), Error> {
             let backup_engine = BackupEngine::new(source_path, repository_path);
             backup_engine.backup()?;
@@ -176,6 +178,27 @@ mod rustback {
             assert!(!are_source_and_target_different);
             Ok(())
         }
+
+        struct Source {
+            directory: TempDir
+        }
+
+        impl Source {
+            fn new() -> Result<Self, Error> {
+                Ok(Self {
+                    directory: tempdir()?
+                })
+            }
+
+            fn write_text_to_file(&self, filename: &str, text: &str) -> Result<(), Error> {
+                Ok(File::create(self.directory.path().join(filename))?.write_all(text.as_bytes())?)
+            }
+
+            fn path(&self) -> &Path {
+                self.directory.path()
+            }
+        }
+
     }
 
 }
