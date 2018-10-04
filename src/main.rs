@@ -27,13 +27,9 @@ impl<'a> BackupEngine<'a> {
     fn backup(&self) -> Result<(), io::Error> {
         let walker = WalkDir::new(self.source_path);
         for maybe_entry in walker {
-            match maybe_entry {
-                Ok(entry) => {
-                    if entry.path() != self.source_path {
-                        self.process_entry(&entry)?;
-                    }
-                }
-                Err(error) => return Err(error.into()),
+            let entry = maybe_entry?;
+            if entry.path() != self.source_path {
+                self.process_entry(&entry)?;
             }
         }
         Ok(())
@@ -44,6 +40,7 @@ impl<'a> BackupEngine<'a> {
     }
 
     fn process_entry(&self, entry: &DirEntry) -> Result<(), io::Error> {
+
         if entry.file_type().is_dir() {
             fs::create_dir(self.repository_path.join(entry.file_name()))?;
         }
@@ -108,7 +105,7 @@ impl<'a> RestoreEngine<'a> {
 
 fn main() {}
 
-mod rustback {
+mod bakare {
 
     #[cfg(test)]
     mod should {
@@ -161,6 +158,9 @@ mod rustback {
             assert_target_file_contents(restore_target.path(), path, old_contents)?;
             Ok(())
         }
+
+        // TODO: restore latest version by default
+        // TODO: deduplicate data
 
         fn assert_target_file_contents(target: &Path, filename: &str, expected_contents: &str) -> Result<(), Error> {
             let restored_path = target.join(filename);
