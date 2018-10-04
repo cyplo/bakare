@@ -11,7 +11,6 @@ use std::path::Path;
 use tempfile::tempdir;
 use tempfile::TempDir;
 use bakare::backup::BackupEngine;
-use bakare::restore::RestoreDescriptor;
 use bakare::restore::RestoreDescriptor::SpecificPath;
 use bakare::restore::RestoreEngine;
 
@@ -20,9 +19,9 @@ fn restore_backed_up_files() -> Result<(), Error> {
     let source = Source::new()?;
     let repository = tempdir()?;
 
-    source.write_text_to_file("first", "some contents");
-    source.write_text_to_file("second", "some contents");
-    source.write_text_to_file("third", "some other contents");
+    source.write_text_to_file("first", "some contents")?;
+    source.write_text_to_file("second", "some contents")?;
+    source.write_text_to_file("third", "some other contents")?;
 
     assert_same_after_restore(source.path(), repository.path())
 }
