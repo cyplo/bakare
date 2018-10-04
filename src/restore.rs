@@ -1,36 +1,36 @@
+use std::fs;
 use std::io;
 use std::path::Path;
-use walkdir::WalkDir;
 use walkdir::DirEntry;
-use std::fs;
+use walkdir::WalkDir;
 
-pub struct RestoreEngine<'a> {
+pub struct Engine<'a> {
     repository_path: &'a Path,
     target_path: &'a Path,
 }
 
-pub enum RestoreDescriptor {
+pub enum WhatToRestore {
     All,
     SpecificPath(String),
 }
 
-impl<'a> RestoreEngine<'a> {
+impl<'a> Engine<'a> {
     pub fn new(repository_path: &'a Path, target_path: &'a Path) -> Self {
-        RestoreEngine {
+        Engine {
             repository_path,
             target_path,
         }
     }
 
     pub fn restore_all(&self) -> Result<(), io::Error> {
-        self.restore(RestoreDescriptor::All)
+        self.restore(WhatToRestore::All)
     }
 
-    fn restore(&self, what: RestoreDescriptor) -> Result<(), io::Error> {
+    fn restore(&self, what: WhatToRestore) -> Result<(), io::Error> {
         self.restore_as_of_version(what, 0)
     }
 
-    pub fn restore_as_of_version(&self, what: RestoreDescriptor, version: u64) -> Result<(), io::Error> {
+    pub fn restore_as_of_version(&self, what: WhatToRestore, version: u64) -> Result<(), io::Error> {
         let walker = WalkDir::new(self.repository_path);
         for maybe_entry in walker {
             match maybe_entry {
@@ -55,4 +55,3 @@ impl<'a> RestoreEngine<'a> {
         Ok(())
     }
 }
-

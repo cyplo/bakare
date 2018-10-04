@@ -1,17 +1,17 @@
+use std::fs;
 use std::io;
 use std::path::Path;
 use walkdir::DirEntry;
 use walkdir::WalkDir;
-use std::fs;
 
-pub struct BackupEngine<'a> {
+pub struct Engine<'a> {
     source_path: &'a Path,
     repository_path: &'a Path,
 }
 
-impl<'a> BackupEngine<'a> {
+impl<'a> Engine<'a> {
     pub fn new(source_path: &'a Path, repository_path: &'a Path) -> Self {
-        BackupEngine {
+        Engine {
             source_path,
             repository_path,
         }
@@ -33,7 +33,6 @@ impl<'a> BackupEngine<'a> {
     }
 
     fn process_entry(&self, entry: &DirEntry) -> Result<(), io::Error> {
-
         if entry.file_type().is_dir() {
             fs::create_dir(self.repository_path.join(entry.file_name()))?;
         }
@@ -43,4 +42,3 @@ impl<'a> BackupEngine<'a> {
         Ok(())
     }
 }
-

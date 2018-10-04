@@ -1,7 +1,10 @@
 extern crate bakare;
-extern crate tempfile;
 extern crate dir_diff;
+extern crate tempfile;
 
+use bakare::backup;
+use bakare::restore;
+use bakare::restore::WhatToRestore::SpecificPath;
 use dir_diff::is_different;
 use std::fs::File;
 use std::io::Error;
@@ -10,9 +13,6 @@ use std::io::Write;
 use std::path::Path;
 use tempfile::tempdir;
 use tempfile::TempDir;
-use bakare::backup::BackupEngine;
-use bakare::restore::RestoreDescriptor::SpecificPath;
-use bakare::restore::RestoreEngine;
 
 #[test]
 fn restore_backed_up_files() -> Result<(), Error> {
@@ -30,11 +30,11 @@ fn restore_backed_up_files() -> Result<(), Error> {
 fn restore_older_version_of_file() -> Result<(), Error> {
     let source = Source::new()?;
     let repository = tempdir()?;
-    let backup_engine = BackupEngine::new(source.path(), repository.path());
+    let backup_engine = backup::Engine::new(source.path(), repository.path());
     let path = "some path";
     let new_contents = "totally new contents";
     let restore_target = tempdir()?;
-    let restore_engine = RestoreEngine::new(repository.path(), &restore_target.path());
+    let restore_engine = restore::Engine::new(repository.path(), &restore_target.path());
     let old_contents = "some old contents";
 
     source.write_text_to_file(path, old_contents)?;
@@ -62,11 +62,11 @@ fn assert_target_file_contents(target: &Path, filename: &str, expected_contents:
 }
 
 fn assert_same_after_restore(source_path: &Path, repository_path: &Path) -> Result<(), Error> {
-    let backup_engine = BackupEngine::new(source_path, repository_path);
+    let backup_engine = backup::Engine::new(source_path, repository_path);
     backup_engine.backup()?;
 
     let restore_target = tempdir()?;
-    let restore_engine = RestoreEngine::new(repository_path, &restore_target.path());
+    let restore_engine = restore::Engine::new(repository_path, &restore_target.path());
     restore_engine.restore_all()?;
 
     let are_source_and_target_different = is_different(source_path, &restore_target.path()).unwrap();
@@ -91,4 +91,3 @@ impl Source {
         self.directory.path()
     }
 }
-
