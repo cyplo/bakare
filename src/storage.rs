@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 use std::path::Path;
 
-#[derive(Copy, Clone, PartialOrd, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialOrd, PartialEq)]
 pub struct Version(pub u64);
 
 struct Index;
@@ -11,7 +11,11 @@ impl Index {
         Self {}
     }
 
-    fn store(&mut self, path: &Path, hash: &[u8]) -> Version {
+    fn store(&mut self, path: &str, hash: &[u8]) -> (Version, String) {
+        (Version(0), "".to_string())
+    }
+
+    fn version(&self, hash: &[u8]) -> Version {
         Version(0)
     }
 }
@@ -23,20 +27,24 @@ mod should {
 
     #[test]
     fn support_file_versions() {
-        // put path and hash into index -> v0
-        // put same path different hash -> v1
-        // query for v0, v1
         let mut index = Index::new();
-        let v1 = index.store(Path::new("/some/path"), "some hash".as_bytes());
-        let v2 = index.store(Path::new("/some/path"), "some other hash".as_bytes());
+        let (v1, _) = index.store("/some/path", "some hash".as_bytes());
+        let (v2, _) = index.store("/some/path", "some other hash".as_bytes());
+
+        assert_eq!(v1, index.version("some hash".as_bytes()));
+        assert_eq!(v2, index.version("some other hash".as_bytes()));
 
         assert!(v2 > v1);
     }
 
     #[test]
     fn support_deduplication() {
-        // put path and hash into index
-        // put same hash, different path
-        // should get same storage paths
+        let mut index = Index::new();
+        let (_, storage_path1) = index.store("/some/path", "same hash".as_bytes());
+        let (_, storage_path2) = index.store("/some/path", "same hash".as_bytes());
+        let (_, storage_path3) = index.store("/some/other/path", "same hash".as_bytes());
+
+        assert_eq!(storage_path1, storage_path2);
+        assert_ne!(storage_path1, storage_path3);
     }
 }
