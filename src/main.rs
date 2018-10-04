@@ -120,11 +120,11 @@ mod rustback {
             let restore_engine = RestoreEngine::new(&repository.path(), &restore_target.path());
             restore_engine.restore()?;
 
-            let are_source_and_target_different =
-                is_different(&source.path(), &restore_target.path()).unwrap();
+            let are_source_and_target_different = is_different(&source.path(), &restore_target.path()).unwrap();
             assert!(!are_source_and_target_different);
             Ok(())
         }
+
     }
 
 }
