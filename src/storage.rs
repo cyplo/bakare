@@ -35,7 +35,7 @@ impl<'a> Index<'a> {
     fn new() -> Self {
         Self {
             file_hashes: HashMap::new(),
-            file_paths: HashMap::new()
+            file_paths: HashMap::new(),
         }
     }
 
@@ -78,7 +78,7 @@ impl<'a> Index<'a> {
                     source_paths.insert(source_path.to_string());
                     IndexHashEntry {
                         source_paths,
-                        storage_path: old_entry.storage_path.clone()
+                        storage_path: old_entry.storage_path.clone(),
                     }
                 },
             )

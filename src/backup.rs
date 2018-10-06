@@ -47,3 +47,16 @@ impl<'a> Engine<'a> {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod should {
+
+    #[test]
+    fn store_file_where_index_tells_it() {
+        // fake index, all files stores at the same path
+        // backup
+        // see if repo contains one file at the faked path
+        assert!(false);
+    }
+
+}
