@@ -10,8 +10,25 @@ pub struct Engine<'a> {
     repository_path: &'a Path,
 }
 
+trait Index {}
+
+struct InMemoryIndex {}
+
+impl InMemoryIndex {
+    fn new() -> Self {
+        InMemoryIndex {}
+    }
+}
+
+impl Index for InMemoryIndex {}
+
 impl<'a> Engine<'a> {
     pub fn new(source_path: &'a Path, repository_path: &'a Path) -> Self {
+        let index = InMemoryIndex::new();
+        Engine::new_with_index(source_path, repository_path, index)
+    }
+
+    fn new_with_index(source_path: &'a Path, repository_path: &'a Path, index: impl Index) -> Self {
         Engine {
             source_path,
             repository_path,
@@ -51,12 +68,26 @@ impl<'a> Engine<'a> {
 #[cfg(test)]
 mod should {
 
+    use super::*;
+    use tempfile::tempdir;
+
+    use crate::source::Source;
+
     #[test]
-    fn store_file_where_index_tells_it() {
-        // fake index, all files stores at the same path
+    fn store_file_where_index_tells_it() -> Result<(), io::Error> {
+        let index = FakeIndex {};
+
+        let source = Source::new()?;
+        let repository = tempdir()?;
+        let engine = Engine::new_with_index(source.path(), repository.path(), index);
+
         // backup
         // see if repo contains one file at the faked path
         assert!(false);
+        Ok(())
     }
 
+    struct FakeIndex {}
+
+    impl Index for FakeIndex {}
 }

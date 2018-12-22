@@ -2,14 +2,14 @@ use bakare::backup;
 use bakare::restore;
 use bakare::restore::WhatToRestore::SpecificPath;
 
+use bakare::source::Source;
+
 use dir_diff::is_different;
 use std::fs::File;
 use std::io::Error;
 use std::io::Read;
-use std::io::Write;
 use std::path::Path;
 use tempfile::tempdir;
-use tempfile::TempDir;
 
 #[test]
 fn restore_backed_up_files() -> Result<(), Error> {
@@ -69,22 +69,4 @@ fn assert_same_after_restore(source_path: &Path, repository_path: &Path) -> Resu
     let are_source_and_target_different = is_different(source_path, &restore_target.path()).unwrap();
     assert!(!are_source_and_target_different);
     Ok(())
-}
-
-struct Source {
-    directory: TempDir,
-}
-
-impl Source {
-    fn new() -> Result<Self, Error> {
-        Ok(Self { directory: tempdir()? })
-    }
-
-    fn write_text_to_file(&self, filename: &str, text: &str) -> Result<(), Error> {
-        Ok(File::create(self.directory.path().join(filename))?.write_all(text.as_bytes())?)
-    }
-
-    fn path(&self) -> &Path {
-        self.directory.path()
-    }
 }
