@@ -1,7 +1,7 @@
+use crate::storage::Version;
 use std::fs;
 use std::io;
 use std::path::Path;
-use storage::Version;
 use walkdir::DirEntry;
 use walkdir::WalkDir;
 
@@ -30,7 +30,7 @@ impl<'a> Engine<'a> {
     }
 
     pub fn file_version(&self, path: &Path) -> Version {
-        Version(0)
+        Version::Newest
     }
 
     fn process_entry(&self, entry: &DirEntry) -> Result<(), io::Error> {

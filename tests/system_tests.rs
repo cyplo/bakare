@@ -1,10 +1,7 @@
-extern crate bakare;
-extern crate dir_diff;
-extern crate tempfile;
-
 use bakare::backup;
 use bakare::restore;
 use bakare::restore::WhatToRestore::SpecificPath;
+
 use dir_diff::is_different;
 use std::fs::File;
 use std::io::Error;

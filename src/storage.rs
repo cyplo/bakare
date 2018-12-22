@@ -2,11 +2,17 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 
 #[derive(Copy, Clone, Debug, PartialOrd, PartialEq)]
-pub struct Version(pub u64);
+pub enum Version {
+    Newest,
+    Specific(u64),
+}
 
 impl Version {
     fn next(self) -> Self {
-        Version(self.0 + 1)
+        match self {
+            Version::Newest => Version::Newest,
+            Version::Specific(old) => Version::Specific(old + 1),
+        }
     }
 }
 
@@ -44,7 +50,7 @@ impl<'a> Index<'a> {
             self.file_paths.get(source_path).map_or_else(
                 || IndexPathEntry {
                     hash,
-                    version: Version(0),
+                    version: Version::Newest,
                     storage_path: format!("{:X?}", hash.0),
                 },
                 |old_entry| {

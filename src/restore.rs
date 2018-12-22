@@ -1,7 +1,7 @@
+use crate::storage::Version;
 use std::fs;
 use std::io;
 use std::path::Path;
-use storage::Version;
 use walkdir::DirEntry;
 use walkdir::WalkDir;
 
@@ -28,7 +28,7 @@ impl<'a> Engine<'a> {
     }
 
     fn restore(&self, what: WhatToRestore) -> Result<(), io::Error> {
-        self.restore_as_of_version(what, Version(0))
+        self.restore_as_of_version(what, Version::Newest)
     }
 
     pub fn restore_as_of_version(&self, what: WhatToRestore, version: Version) -> Result<(), io::Error> {
