@@ -3,6 +3,7 @@ name = "bakare"
 version = "0.1.0"
 authors = ["Cyryl Płotnicki <cyplo@cyplo.net>"]
 edition = "2018"
+license = "AGPL-3.0"
 
 [dependencies]
 walkdir = "2.2"
