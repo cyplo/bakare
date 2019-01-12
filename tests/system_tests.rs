@@ -45,8 +45,7 @@ fn restore_older_version_of_file() -> Result<(), BakareError> {
 
     restore_engine.restore_as_of_version(file_id, old_version)?;
 
-    assert_target_file_contents(restore_target.path(), file_path, old_contents)?;
-    Ok(())
+    assert_target_file_contents(restore_target.path(), file_path, old_contents)
 }
 
 fn assert_target_file_contents(target: &Path, filename: &str, expected_contents: &str) -> Result<(), BakareError> {
