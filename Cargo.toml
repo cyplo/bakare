@@ -9,6 +9,7 @@ license = "AGPL-3.0"
 walkdir = "2.2"
 rust-crypto = "0.2"
 tempfile = "3.0"
+failure = "0.1"
 
 [dev-dependencies]
 rust-crypto = "0.2"

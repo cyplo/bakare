@@ -1,52 +1,47 @@
-use crate::storage::Version;
+use std::error::Error;
 use std::fs;
 use std::io;
 use std::path::Path;
+
 use walkdir::DirEntry;
 use walkdir::WalkDir;
 
+use crate::error::BakareError;
+use crate::repository::Repository;
+use crate::repository::StoredItemId;
+use crate::Version;
+
 pub struct Engine<'a> {
-    repository_path: &'a Path,
+    repository: &'a Repository<'a>,
     target_path: &'a Path,
 }
 
-pub enum WhatToRestore {
-    All,
-    SpecificPath(String),
-}
 
 impl<'a> Engine<'a> {
-    pub fn new(repository_path: &'a Path, target_path: &'a Path) -> Self {
+    pub fn new(repository: &'a Repository, target_path: &'a Path) -> Self {
         Engine {
-            repository_path,
+            repository,
             target_path,
         }
     }
 
-    pub fn restore_all(&self) -> Result<(), io::Error> {
-        self.restore(WhatToRestore::All)
-    }
-
-    fn restore(&self, what: WhatToRestore) -> Result<(), io::Error> {
-        self.restore_as_of_version(what, Version::Newest)
-    }
-
-    pub fn restore_as_of_version(&self, what: WhatToRestore, version: Version) -> Result<(), io::Error> {
-        let walker = WalkDir::new(self.repository_path);
-        for maybe_entry in walker {
-            match maybe_entry {
-                Ok(entry) => {
-                    if entry.path() != self.repository_path {
-                        self.process_entry(&entry)?;
-                    }
-                }
-                Err(error) => return Err(error.into()),
-            }
+    pub fn restore_all(&self) -> Result<(), BakareError> {
+        for item in self.repository {
+            self.restore(item)?;
         }
         Ok(())
     }
 
-    fn process_entry(&self, entry: &DirEntry) -> Result<(), io::Error> {
+    fn restore(&self, item: StoredItemId) -> Result<(), BakareError> {
+        let version = self.repository.newest_version_for(&item)?;
+        self.restore_as_of_version(item, version)
+    }
+
+    pub fn restore_as_of_version(&self, what: StoredItemId, version: Version) -> Result<(), BakareError> {
+        unimplemented!()
+    }
+
+    fn process_entry(&self, entry: &DirEntry) -> Result<(), BakareError> {
         if entry.file_type().is_dir() {
             fs::create_dir(self.target_path.join(entry.file_name()))?;
         }
