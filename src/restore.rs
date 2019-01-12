@@ -16,13 +16,9 @@ pub struct Engine<'a> {
     target_path: &'a Path,
 }
 
-
 impl<'a> Engine<'a> {
     pub fn new(repository: &'a Repository, target_path: &'a Path) -> Self {
-        Engine {
-            repository,
-            target_path,
-        }
+        Engine { repository, target_path }
     }
 
     pub fn restore_all(&self) -> Result<(), BakareError> {

@@ -10,16 +10,14 @@ use crate::Version;
 
 /// represents a place where backup is stored an can be restored from. E.g. a directory, a cloud service etc
 pub struct Repository<'a> {
-    path: &'a Path
+    path: &'a Path,
 }
 
 pub struct StoredItemId;
 pub struct RelativePath;
 impl<'a> Repository<'a> {
     pub fn new(path: &Path) -> Result<Repository, BakareError> {
-        Ok(Repository {
-            path
-        })
+        Ok(Repository { path })
     }
 
     pub fn store_entry(&self, entry: &DirEntry) -> Result<(), BakareError> {
@@ -65,4 +63,3 @@ impl<'a> Iterator for &Repository<'a> {
         unimplemented!()
     }
 }
-

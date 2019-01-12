@@ -5,8 +5,8 @@ use std::io;
 
 use failure::Fail;
 
-pub mod error;
 pub mod backup;
+pub mod error;
 pub mod restore;
 pub mod source;
 
@@ -18,5 +18,3 @@ struct RepositoryRelativePath {}
 struct Index<'a> {
     versions: HashMap<&'a RepositoryRelativePath, &'a Version>,
 }
-
-

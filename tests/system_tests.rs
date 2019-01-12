@@ -3,25 +3,23 @@ use bakare::restore;
 
 use bakare::source::Source;
 
+use bakare::error::BakareError;
+use bakare::repository::Repository;
 use dir_diff::is_different;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 use tempfile::tempdir;
-use bakare::error::BakareError;
-use bakare::repository::Repository;
 
 #[test]
 fn restore_backed_up_files() -> Result<(), BakareError> {
     let source = Source::new()?;
-    let repository_path = tempdir()?.into_path();
-    let repository = Repository::new(repository_path.as_path())?;
 
     source.write_text_to_file("first", "some contents")?;
     source.write_text_to_file("second", "some contents")?;
     source.write_text_to_file("third", "some other contents")?;
 
-    assert_same_after_restore(source.path(), &repository)
+    assert_same_after_restore(source.path())
 }
 
 #[test]
@@ -51,9 +49,6 @@ fn restore_older_version_of_file() -> Result<(), BakareError> {
     Ok(())
 }
 
-// TODO: restore latest version by default
-// TODO: deduplicate data
-
 fn assert_target_file_contents(target: &Path, filename: &str, expected_contents: &str) -> Result<(), BakareError> {
     let restored_path = target.join(filename);
     let mut actual_contents = String::new();
@@ -62,15 +57,20 @@ fn assert_target_file_contents(target: &Path, filename: &str, expected_contents:
     Ok(())
 }
 
-fn assert_same_after_restore(source_path: &Path, repository: &Repository) -> Result<(), BakareError> {
-    let backup_engine = backup::Engine::new(source_path, repository);
+fn assert_same_after_restore(source_path: &Path) -> Result<(), BakareError> {
+    let repository_path = tempdir()?.into_path();
+    let repository = Repository::new(repository_path.as_path())?;
+    let backup_engine = backup::Engine::new(source_path, &repository);
     backup_engine.backup()?;
 
     let restore_target = tempdir()?;
-    let restore_engine = restore::Engine::new(repository, &restore_target.path());
+    let restore_engine = restore::Engine::new(&repository, &restore_target.path());
     restore_engine.restore_all()?;
 
     let are_source_and_target_different = is_different(source_path, &restore_target.path()).unwrap();
     assert!(!are_source_and_target_different);
     Ok(())
 }
+
+// TODO: restore latest version by default
+// TODO: deduplicate data

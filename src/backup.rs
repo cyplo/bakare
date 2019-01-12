@@ -14,16 +14,12 @@ use crate::Version;
 
 pub struct Engine<'a> {
     source_path: &'a Path,
-    repository: &'a Repository<'a>
+    repository: &'a Repository<'a>,
 }
-
 
 impl<'a> Engine<'a> {
     pub fn new(source_path: &'a Path, repository: &'a Repository) -> Self {
-        Engine {
-            source_path,
-            repository,
-        }
+        Engine { source_path, repository }
     }
 
     pub fn backup(&self) -> Result<(), BakareError> {
@@ -36,5 +32,4 @@ impl<'a> Engine<'a> {
         }
         Ok(())
     }
-
 }
