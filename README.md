@@ -33,13 +33,13 @@ Tried restic:
 Goals for bakare:
 * fast
 * using max bandwidth
+* use max cpu
+* use max disk I/O
 * memory usage limit
 * encryption by default - asymmetric, creates a keypair for you
-* deduplication
+* deduplication of file data
 * fuzzy find by file name in stored files
+* failure to process one file should not affect any other files
 
 Implementation:
-* hash -> file and file -> hash indexes
-* use vfs to store both db and data files, create a new one when old one too big
-* start with simple read file -> hash -> encrypt -?> send
 * test with randomly created dirs and files, with property based tests and fuzzer
