@@ -1,7 +1,7 @@
 use bakare::backup;
 use bakare::restore;
 
-use bakare::source::Source;
+use bakare::source::TempSource;
 
 use bakare::error::BakareError;
 use bakare::repository::Repository;
@@ -13,7 +13,7 @@ use tempfile::tempdir;
 
 #[test]
 fn restore_backed_up_files() -> Result<(), BakareError> {
-    let source = Source::new()?;
+    let source = TempSource::new()?;
 
     source.write_text_to_file("first", "some contents")?;
     source.write_text_to_file("second", "some contents")?;
@@ -24,28 +24,28 @@ fn restore_backed_up_files() -> Result<(), BakareError> {
 
 #[test]
 fn restore_older_version_of_file() -> Result<(), BakareError> {
-    let source = Source::new()?;
+    let source = TempSource::new()?;
     let repository_path = tempdir()?.into_path();
     let repository = Repository::new(repository_path.as_path())?;
     let backup_engine = backup::Engine::new(source.path(), &repository);
-    let file_path = "some path";
+    let relative_path_text = "some path";
+    let file_path = source.file_path(relative_path_text);
     let new_contents = "totally new contents";
     let restore_target = tempdir()?;
     let restore_engine = restore::Engine::new(&repository, &restore_target.path());
     let old_contents = "some old contents";
 
-    source.write_text_to_file(file_path, old_contents)?;
+    source.write_text_to_file(relative_path_text, old_contents)?;
     backup_engine.backup()?;
-    let repository_path = repository.relative_path(file_path);
-    let file_id = repository.file_id(&repository_path)?;
-    let old_version = repository.newest_version_for(&file_id)?;
+    let file_id = repository.item(&file_path).unwrap();
+    let old_version = file_id.version();
 
-    source.write_text_to_file(file_path, new_contents)?;
+    source.write_text_to_file(relative_path_text, new_contents)?;
     backup_engine.backup()?;
 
-    restore_engine.restore_as_of_version(file_id, old_version)?;
+    restore_engine.restore_as_of_version(&file_id, old_version)?;
 
-    assert_target_file_contents(restore_target.path(), file_path, old_contents)
+    assert_target_file_contents(restore_target.path(), relative_path_text, old_contents)
 }
 
 fn assert_target_file_contents(target: &Path, filename: &str, expected_contents: &str) -> Result<(), BakareError> {

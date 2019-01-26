@@ -8,58 +8,61 @@ use walkdir::DirEntry;
 use crate::error::BakareError;
 use crate::Version;
 
-/// represents a place where backup is stored an can be restored from. E.g. a directory, a cloud service etc
+/// represents a place where backup is stored an can be restored from.
+/// right now only on-disk directory storage is supported
 pub struct Repository<'a> {
+    /// absolute path to where the repository is stored on disk
     path: &'a Path,
 }
 
-pub struct StoredItemId;
-pub struct RelativePath;
+pub struct RepositoryItem {
+    version: Version
+}
+
+impl<'a> Iterator for &Repository<'a> {
+    type Item = RepositoryItem;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        unimplemented!()
+    }
+}
+
+impl RepositoryItem {
+    pub fn version(&self) -> &Version {
+        &self.version
+    }
+}
+
 impl<'a> Repository<'a> {
     pub fn new(path: &Path) -> Result<Repository, BakareError> {
         Ok(Repository { path })
     }
 
-    pub fn store_entry(&self, entry: &DirEntry) -> Result<(), BakareError> {
+    pub fn store(&self, source_path: &Path) -> Result<(), BakareError> {
         // get file id -> contents hash + original path + time of taking notes
         // get storage path for File
         // store file contents
         // remember File
 
-        if entry.file_type().is_dir() {
-            fs::create_dir(self.path.join(entry.file_name()))?;
+        if source_path.is_dir() {
+            fs::create_dir(self.path.join(source_path))?;
         }
-        if entry.file_type().is_file() {
-            fs::copy(entry.path(), self.path.join(entry.file_name()))?;
+        if source_path.is_file() {
+            fs::copy(source_path, self.path.join(source_path))?;
         }
+
+        // TODO create new version, remember source_path
+
         Ok(())
     }
 
-    pub fn newest_version_for(&self, item: &StoredItemId) -> Result<Version, BakareError> {
+    pub fn item(&self, path: &Path) -> Option<RepositoryItem> {
         unimplemented!()
     }
 
-    pub fn relative_path(&self, path: &str) -> RelativePath {
+    pub fn newest_version_for(&self, source_path: &Path) -> Result<Version, BakareError> {
         unimplemented!()
     }
 
-    pub fn file_id(&self, path: &RelativePath) -> Result<StoredItemId, BakareError> {
-        unimplemented!()
-    }
 }
 
-impl<'a> Iterator for Repository<'a> {
-    type Item = StoredItemId;
-
-    fn next(&mut self) -> Option<<Self as Iterator>::Item> {
-        unimplemented!()
-    }
-}
-
-impl<'a> Iterator for &Repository<'a> {
-    type Item = StoredItemId;
-
-    fn next(&mut self) -> Option<<Self as Iterator>::Item> {
-        unimplemented!()
-    }
-}

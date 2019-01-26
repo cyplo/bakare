@@ -8,8 +8,8 @@ use walkdir::WalkDir;
 
 use crate::error::BakareError;
 use crate::repository::Repository;
-use crate::repository::StoredItemId;
 use crate::Version;
+use crate::repository::RepositoryItem;
 
 pub struct Engine<'a> {
     repository: &'a Repository<'a>,
@@ -22,18 +22,17 @@ impl<'a> Engine<'a> {
     }
 
     pub fn restore_all(&self) -> Result<(), BakareError> {
-        for item in self.repository {
+        for ref item in self.repository {
             self.restore(item)?;
         }
         Ok(())
     }
 
-    fn restore(&self, item: StoredItemId) -> Result<(), BakareError> {
-        let version = self.repository.newest_version_for(&item)?;
-        self.restore_as_of_version(item, version)
+    fn restore(&self, item: &RepositoryItem) -> Result<(), BakareError> {
+        unimplemented!()
     }
 
-    pub fn restore_as_of_version(&self, what: StoredItemId, version: Version) -> Result<(), BakareError> {
+    pub fn restore_as_of_version(&self, item: &RepositoryItem, version: &Version) -> Result<(), BakareError> {
         unimplemented!()
     }
 

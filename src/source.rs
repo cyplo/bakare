@@ -5,21 +5,27 @@ use std::path::Path;
 
 use tempfile::tempdir;
 use tempfile::TempDir;
+use std::path::PathBuf;
 
-pub struct Source {
+pub struct TempSource {
     directory: TempDir,
 }
 
-impl Source {
+impl TempSource {
     pub fn new() -> Result<Self, Error> {
         Ok(Self { directory: tempdir()? })
     }
 
     pub fn write_text_to_file(&self, filename: &str, text: &str) -> Result<(), Error> {
-        Ok(File::create(self.directory.path().join(filename))?.write_all(text.as_bytes())?)
+        let path = self.file_path(filename);
+        Ok(File::create(path)?.write_all(text.as_bytes())?)
     }
 
     pub fn path(&self) -> &Path {
         self.directory.path()
+    }
+
+    pub fn file_path(&self, filename: &str) -> PathBuf {
+        self.directory.path().join(filename)
     }
 }

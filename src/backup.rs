@@ -27,7 +27,7 @@ impl<'a> Engine<'a> {
         for maybe_entry in walker {
             let entry = maybe_entry?;
             if entry.path() != self.source_path {
-                self.repository.store_entry(&entry)?;
+                self.repository.store(entry.path())?;
             }
         }
         Ok(())
