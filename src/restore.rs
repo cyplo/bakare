@@ -8,7 +8,7 @@ use walkdir::WalkDir;
 
 use crate::error::BakareError;
 use crate::repository::Repository;
-use crate::Version;
+use crate::ItemVersion;
 use crate::repository::RepositoryItem;
 
 pub struct Engine<'a> {
@@ -32,7 +32,7 @@ impl<'a> Engine<'a> {
         unimplemented!()
     }
 
-    pub fn restore_as_of_version(&self, item: &RepositoryItem, version: &Version) -> Result<(), BakareError> {
+    pub fn restore_as_of_version(&self, item: &RepositoryItem, version: &ItemVersion) -> Result<(), BakareError> {
         unimplemented!()
     }
 

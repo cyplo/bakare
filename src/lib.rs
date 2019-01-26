@@ -12,7 +12,9 @@ pub mod source;
 
 pub mod repository;
 
-pub struct Version(String);
+pub struct ItemVersion(String);
 
-struct Index {
+pub struct IndexVersion;
+struct IndexViewReadonly {
+   index_version: IndexVersion
 }

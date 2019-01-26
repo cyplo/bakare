@@ -9,7 +9,7 @@ use walkdir::WalkDir;
 
 use crate::error::BakareError;
 use crate::repository::Repository;
-use crate::Version;
+use crate::ItemVersion;
 
 pub struct Engine<'a> {
     source_path: &'a Path,

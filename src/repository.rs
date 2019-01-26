@@ -6,22 +6,30 @@ use std::path::Path;
 use walkdir::DirEntry;
 
 use crate::error::BakareError;
-use crate::Version;
-use crate::Index;
+use crate::ItemVersion;
+use crate::IndexViewReadonly;
+use crate::IndexVersion;
 
 /// represents a place where backup is stored an can be restored from.
 /// right now only on-disk directory storage is supported
+/// repository always knows the newest version of the index and is responsible for syncing the index to disk
+/// and making sure that different threads can access index in parallel
 pub struct Repository<'a> {
     /// absolute path to where the repository is stored on disk
     path: &'a Path,
-    index: Index
+    index: IndexViewReadonly,
+    newest_index_version: IndexVersion
 }
 
 pub struct RepositoryItem {
-    version: Version
+    version: ItemVersion
 }
 
-pub struct RepositoryIterator;
+
+pub struct RepositoryIterator {
+    version: IndexVersion,
+    index: IndexViewReadonly
+}
 
 impl<'a> Iterator for RepositoryIterator {
     type Item = RepositoryItem;
@@ -32,7 +40,7 @@ impl<'a> Iterator for RepositoryIterator {
 }
 
 impl RepositoryItem {
-    pub fn version(&self) -> &Version {
+    pub fn version(&self) -> &ItemVersion {
         &self.version
     }
 }
@@ -41,11 +49,11 @@ impl<'a> Repository<'a> {
     pub fn open(path: &Path) -> Result<Repository, BakareError> {
         // TODO open index from file
 
-        Ok(Repository { path, index: Index {} })
+        Ok(Repository { path, index: IndexViewReadonly {} })
     }
 
     pub fn iter(&self) -> RepositoryIterator {
-        unimplemented!()
+
     }
 
     pub fn store(&self, source_path: &Path) -> Result<(), BakareError> {
@@ -70,7 +78,7 @@ impl<'a> Repository<'a> {
         unimplemented!()
     }
 
-    pub fn newest_version_for(&self, source_path: &Path) -> Result<Version, BakareError> {
+    pub fn newest_version_for(&self, source_path: &Path) -> Result<ItemVersion, BakareError> {
         unimplemented!()
     }
 
