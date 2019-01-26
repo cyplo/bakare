@@ -26,7 +26,7 @@ fn restore_backed_up_files() -> Result<(), BakareError> {
 fn restore_older_version_of_file() -> Result<(), BakareError> {
     let source = TempSource::new()?;
     let repository_path = tempdir()?.into_path();
-    let repository = Repository::new(repository_path.as_path())?;
+    let repository = Repository::open(repository_path.as_path())?;
     let backup_engine = backup::Engine::new(source.path(), &repository);
     let relative_path_text = "some path";
     let file_path = source.file_path(relative_path_text);
@@ -58,7 +58,7 @@ fn assert_target_file_contents(target: &Path, filename: &str, expected_contents:
 
 fn assert_same_after_restore(source_path: &Path) -> Result<(), BakareError> {
     let repository_path = tempdir()?.into_path();
-    let repository = Repository::new(repository_path.as_path())?;
+    let repository = Repository::open(repository_path.as_path())?;
     let backup_engine = backup::Engine::new(source_path, &repository);
     backup_engine.backup()?;
 

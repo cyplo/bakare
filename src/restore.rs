@@ -22,7 +22,7 @@ impl<'a> Engine<'a> {
     }
 
     pub fn restore_all(&self) -> Result<(), BakareError> {
-        for ref item in self.repository {
+        for ref item in self.repository.iter() {
             self.restore(item)?;
         }
         Ok(())

@@ -9,7 +9,6 @@ use walkdir::WalkDir;
 
 use crate::error::BakareError;
 use crate::repository::Repository;
-use crate::RepositoryRelativePath;
 use crate::Version;
 
 pub struct Engine<'a> {

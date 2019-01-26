@@ -13,8 +13,6 @@ pub mod source;
 pub mod repository;
 
 pub struct Version(String);
-struct RepositoryRelativePath {}
 
-struct Index<'a> {
-    versions: HashMap<&'a RepositoryRelativePath, &'a Version>,
+struct Index {
 }
