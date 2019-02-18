@@ -42,6 +42,9 @@ Goals for bakare:
 * failure to process one file should not affect any other files
 * intermittent network failures should not make the whole process fail (test with random packet drop)
 
+Nice to have:
+* daemon that listens for file events and updates a list of files to be backed up on the next backup run
+
 Implementation:
 * test with randomly created dirs and files, with property based tests and fuzzer
 * see if we can use `salsa` for recomputaiton
