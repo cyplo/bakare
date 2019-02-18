@@ -40,6 +40,8 @@ Goals for bakare:
 * deduplication of file data
 * fuzzy find by file name in stored files
 * failure to process one file should not affect any other files
+* intermittent network failures should not make the whole process fail (test with random packet drop)
 
 Implementation:
 * test with randomly created dirs and files, with property based tests and fuzzer
+* see if we can use `salsa` for recomputaiton
