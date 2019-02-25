@@ -49,6 +49,7 @@ Goals for bakare:
 Nice to have:
 * daemon that listens for file events and updates a list of files to be backed up on the next backup run - or a `continous backup` mode - the daemon uploads the file whenever it sees the change
 * peer2peer mode - people storing encrypted backups for each other
+* relay mode, where daemon works on one or more central points with local storage (e.g. NAS) and various computers sync with that central location. Then though the central locaiton uploads everything to the other location, typically the cloud.
 
 Implementation:
 * test with randomly created dirs and files, with property based tests and fuzzer
