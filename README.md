@@ -29,7 +29,6 @@ Tried restic:
 * crashes with OOM
 
 
-
 Goals for bakare:
 * fast
 * using max bandwidth
@@ -43,8 +42,12 @@ Goals for bakare:
 * intermittent network failures should not make the whole process fail (test with random packet drop)
 
 Nice to have:
-* daemon that listens for file events and updates a list of files to be backed up on the next backup run
+* daemon that listens for file events and updates a list of files to be backed up on the next backup run - or a `continous backup` mode - the daemon uploads the file whenever it sees the change
+* peer2peer mode - people storing encrypted backups for each other
 
 Implementation:
 * test with randomly created dirs and files, with property based tests and fuzzer
 * see if we can use `salsa` for recomputaiton
+* index corruption tests - mutate random byte and see if everything is readable
+* network packet drop tests
+
