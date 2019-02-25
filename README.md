@@ -2,7 +2,9 @@ Motivation:
 All the backup systems are either slow or crashing or both on my backup.
 
 Tried duply:
-* works but very slow:
+<details>
+  <summary>Works but is very slow</summary>
+  
 ```
 --------------[ Backup Statistics ]--------------
 StartTime 1547198362.85 (Fri Jan 11 09:19:22 2019)
@@ -24,6 +26,9 @@ Errors 0
 
 --- Finished state OK at 12:25:15.000 - Runtime 03:06:43.000 ---
 ```
+
+</details>
+
 
 Tried restic:
 * crashes with OOM
