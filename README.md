@@ -45,6 +45,7 @@ Goals for bakare:
 * fuzzy find by file name in stored files
 * failure to process one file should not affect any other files
 * intermittent network failures should not make the whole process fail (test with random packet drop)
+* system suspend/resume should not make the repo become corrupted, even in the presence of other active backup processes running on other computers, targeting same repo - this is where `restic` fails
 
 Nice to have:
 * daemon that listens for file events and updates a list of files to be backed up on the next backup run - or a `continous backup` mode - the daemon uploads the file whenever it sees the change
