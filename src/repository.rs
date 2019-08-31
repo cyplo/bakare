@@ -32,7 +32,7 @@ impl<'a> Iterator for RepositoryIterator<'a> {
     type Item = RepositoryItem<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.current_item_number >= self.index.items.len() - 1 {
+        if self.index.items.is_empty() || self.current_item_number >= self.index.items.len() - 1 {
             None
         } else {
             let current_item_number = self.current_item_number;
@@ -81,9 +81,7 @@ impl<'a> Repository<'a> {
         if source_path.is_dir() {
             fs::create_dir(destination_path.clone())?;
         }
-        if source_path.is_file() {
-            fs::copy(source_path, destination_path.clone())?;
-        }
+        if source_path.is_file() {}
 
         // TODO create new version, remember source_path
 
@@ -91,10 +89,10 @@ impl<'a> Repository<'a> {
     }
 
     pub fn item(&self, path: &Path) -> Option<RepositoryItem> {
-        unimplemented!()
+        None
     }
 
     pub fn newest_version_for(&self, source_path: &Path) -> Result<ItemVersion, BakareError> {
-        unimplemented!()
+        Err(BakareError::UnknownSourcePathError)
     }
 }

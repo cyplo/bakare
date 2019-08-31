@@ -37,7 +37,9 @@ fn restore_older_version_of_file() -> Result<(), BakareError> {
 
     source.write_text_to_file(relative_path_text, old_contents)?;
     backup_engine.backup()?;
-    let file_id = repository.item(&file_path).unwrap();
+    let file_id = repository.item(&file_path);
+    assert!(file_id.is_some());
+    let file_id = file_id.unwrap();
     let old_version = file_id.version();
 
     source.write_text_to_file(relative_path_text, new_contents)?;
