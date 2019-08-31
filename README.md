@@ -32,7 +32,7 @@ Errors 0
 
 Tried restic:
 * crashes with OOM
-
+* corrupts repo if you suspend one backup process and launch another from a different computer
 
 Goals for bakare:
 * fast
