@@ -1,9 +1,4 @@
-use std::collections::HashMap;
-use std::fmt::Display;
-use std::fmt::Formatter;
-use std::io;
-
-use failure::Fail;
+use crate::repository::RepositoryItem;
 
 pub mod backup;
 pub mod error;
@@ -12,9 +7,14 @@ pub mod source;
 
 pub mod repository;
 
-pub struct ItemVersion(String);
+#[derive(Copy, Clone)]
+pub struct ItemVersion<'a>(&'a str);
 
+#[derive(Copy, Clone)]
 pub struct IndexVersion;
-struct IndexViewReadonly {
-   index_version: IndexVersion
+
+#[derive(Clone)]
+struct IndexViewReadonly<'a> {
+    index_version: IndexVersion,
+    items: Vec<RepositoryItem<'a>>,
 }

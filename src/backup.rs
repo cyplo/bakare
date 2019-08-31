@@ -1,15 +1,9 @@
-use std::collections::HashMap;
-use std::error::Error;
-use std::fs;
-use std::io;
 use std::path::Path;
 
-use walkdir::DirEntry;
 use walkdir::WalkDir;
 
 use crate::error::BakareError;
 use crate::repository::Repository;
-use crate::ItemVersion;
 
 pub struct Engine<'a> {
     source_path: &'a Path,

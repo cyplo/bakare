@@ -2,10 +2,10 @@ use std::fs::File;
 use std::io::Error;
 use std::io::Write;
 use std::path::Path;
+use std::path::PathBuf;
 
 use tempfile::tempdir;
 use tempfile::TempDir;
-use std::path::PathBuf;
 
 pub struct TempSource {
     directory: TempDir,
