@@ -24,6 +24,7 @@ pub struct RepositoryItem<'a> {
     version: ItemVersion<'a>,
     relative_path: Box<Path>,
     absolute_path: Box<Path>,
+    original_source_path: Box<Path>,
 }
 
 pub struct RepositoryIterator<'a> {
@@ -140,19 +141,17 @@ impl<'a> Repository<'a> {
         Ok(())
     }
 
-    pub fn item(&self, path: &Path) -> Option<&RepositoryItem> {
-        let relative_path = {
-            if path.is_relative() {
-                Some(path)
-            } else {
-                path.strip_prefix(self.path).ok()
-            }
-        };
-        if let Some(relative_path) = relative_path {
-            self.index.items.iter().find(|i| *i.relative_path == *relative_path)
-        } else {
-            None
+    pub fn item_by_source_path(&self, path: &Path) -> Result<Option<&RepositoryItem>, BakareError> {
+        println!(
+            "trying to find {} in a repo [{}] of {} items",
+            path.display(),
+            self.path.display(),
+            self.index.items.len()
+        );
+        if !path.is_absolute() {
+            return Err(BakareError::RepositoryPathNotAbsolute);
         }
+        self.index.items.iter().find(|i| *i.original_source_path == *path)
     }
 
     pub fn newest_version_for(&self, item: RepositoryItem) -> ItemVersion {

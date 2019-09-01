@@ -42,8 +42,8 @@ fn restore_older_version_of_file() -> Result<(), BakareError> {
         backup_engine.backup()?;
     }
 
-    let backup_repository = Repository::open(repository_path.as_path())?;
-    let file_id = backup_repository.item(&file_path);
+    let reading_repository = Repository::open(repository_path.as_path())?;
+    let file_id = reading_repository.item_by_source_path(&file_path)?;
     assert!(file_id.is_some());
     let file_id = file_id.unwrap();
     let old_version = file_id.version();
