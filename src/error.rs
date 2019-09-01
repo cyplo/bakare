@@ -1,27 +1,38 @@
 use std::io;
 
 use failure::Fail;
+use std::path::StripPrefixError;
 
 #[derive(Debug, Fail)]
 pub enum BakareError {
     #[fail(display = "io error")]
-    IOError,
+    IOError(Option<io::Error>),
     #[fail(display = "backup source same as repository")]
     SourceSameAsRepository,
     #[fail(display = "repository path is not absolute")]
     RepositoryPathNotAbsolute,
     #[fail(display = "path to store is not absolute")]
     PathToStoreNotAbsolute,
+    #[fail(display = "directory used in place of a file")]
+    DirectoryNotFile,
+    #[fail(display = "corrupted repository - cannot find file")]
+    CorruptedRepoNoFile,
 }
 
 impl From<io::Error> for BakareError {
     fn from(e: io::Error) -> Self {
-        BakareError::IOError
+        BakareError::IOError(Some(e))
     }
 }
 
 impl From<walkdir::Error> for BakareError {
     fn from(e: walkdir::Error) -> Self {
-        BakareError::IOError
+        BakareError::IOError(e.into_io_error())
+    }
+}
+
+impl From<StripPrefixError> for BakareError {
+    fn from(_: StripPrefixError) -> Self {
+        BakareError::IOError(None)
     }
 }

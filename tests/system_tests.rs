@@ -32,7 +32,7 @@ fn restore_older_version_of_file() -> Result<(), BakareError> {
     let file_path = source.file_path(relative_path_text);
     let new_contents = "totally new contents";
     let restore_target = tempdir()?;
-    let restore_engine = restore::Engine::new(&restore_repository, &restore_target.path());
+    let restore_engine = restore::Engine::new(&restore_repository, &restore_target.path())?;
     let old_contents = "some old contents";
 
     {
@@ -82,7 +82,7 @@ fn assert_same_after_restore(source_path: &Path) -> Result<(), BakareError> {
     }
     {
         let restore_repository = Repository::open(repository_path.as_path())?;
-        let restore_engine = restore::Engine::new(&restore_repository, &restore_target);
+        let restore_engine = restore::Engine::new(&restore_repository, &restore_target)?;
         restore_engine.restore_all()?;
     }
     let are_source_and_target_different = is_different(source_path, &restore_target).unwrap();

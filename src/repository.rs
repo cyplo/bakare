@@ -1,15 +1,12 @@
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
-use walkdir::{DirEntry, WalkDir};
+use walkdir::WalkDir;
 
 use crate::error::BakareError;
 use crate::IndexVersion;
 use crate::IndexViewReadonly;
 use crate::ItemVersion;
-use std::borrow::Cow;
-use std::rc::Rc;
-use std::sync::Arc;
 
 /// represents a place where backup is stored an can be restored from.
 /// right now only on-disk directory storage is supported
@@ -22,16 +19,39 @@ pub struct Repository<'a> {
     newest_index_version: IndexVersion,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialOrd, PartialEq, Ord, Eq)]
 pub struct RepositoryItem<'a> {
     version: ItemVersion<'a>,
     relative_path: Box<Path>,
+    absolute_path: Box<Path>,
 }
 
 pub struct RepositoryIterator<'a> {
     version: IndexVersion,
     index: &'a IndexViewReadonly<'a>,
     current_item_number: usize,
+}
+
+impl<'a> RepositoryItem<'a> {
+    pub fn save(&self, save_to: &Path) -> Result<(), BakareError> {
+        if !save_to.is_absolute() {
+            return Err(BakareError::PathToStoreNotAbsolute);
+        }
+
+        let target_path = save_to.join(self.relative_path.clone());
+        let parent = target_path.parent().unwrap();
+        if !parent.exists() {
+            println!("Creating {}", parent.display());
+            fs::create_dir_all(parent)?;
+        }
+        if !self.absolute_path.exists() {
+            return Err(BakareError::CorruptedRepoNoFile);
+        }
+        println!("Saving {} to {}", self.absolute_path.display(), target_path.display());
+        fs::copy(self.absolute_path.clone(), target_path.clone())?;
+
+        Ok(())
+    }
 }
 
 impl<'a> Iterator for RepositoryIterator<'a> {
@@ -55,44 +75,25 @@ impl<'a> RepositoryItem<'a> {
 }
 
 impl<'a> Repository<'a> {
-    fn get_all_files_recursively(path: &Path) -> Result<Vec<Box<Path>>, BakareError> {
-        let path_text = path.to_string_lossy();
-        let walker = WalkDir::new(path);
-
-        let mut result = vec![];
-
-        for maybe_entry in walker {
-            let entry = maybe_entry?;
-            if entry.path() != path {
-                if entry.path().is_file() {
-                    result.push(Box::from(path));
-                }
-                if entry.path().is_dir() {
-                    let children = Repository::get_all_files_recursively(entry.path())?;
-
-                    for child in children {
-                        result.push(child);
-                    }
-                }
-            }
-        }
-
-        Ok(result)
-    }
     pub fn open(path: &Path) -> Result<Repository, BakareError> {
         if !path.is_absolute() {
             return Err(BakareError::RepositoryPathNotAbsolute);
         }
-        println!("opening repository at {}", path.display());
 
         let all_files = Repository::get_all_files_recursively(path)?;
-        let all_items: Vec<RepositoryItem> = all_files
+        let all_items: Result<Vec<RepositoryItem>, BakareError> = all_files
             .into_iter()
-            .map(|p| RepositoryItem {
-                version: ItemVersion(""),
-                relative_path: p,
+            .map(|p| {
+                let relative_path = Box::from(p.strip_prefix(path)?);
+                Ok(RepositoryItem {
+                    version: ItemVersion(""),
+                    relative_path,
+                    absolute_path: Box::from(p),
+                })
             })
             .collect();
+        let mut all_items = all_items?;
+        all_items.sort();
 
         let version = IndexVersion;
         println!("opened repository at {} - {} items present", path.display(), all_items.len());
@@ -132,17 +133,47 @@ impl<'a> Repository<'a> {
             fs::copy(source_path, destination_path)?;
             self.index.items.push(RepositoryItem {
                 version: ItemVersion(""),
-                relative_path: Box::from(destination_path),
+                relative_path: Box::from(destination_path.strip_prefix(self.path)?),
+                absolute_path: Box::from(destination_path),
             });
         }
         Ok(())
     }
 
     pub fn item(&self, path: &Path) -> Option<&RepositoryItem> {
-        self.index.items.iter().find(|i| *i.relative_path == *path)
+        let relative_path = {
+            if path.is_relative() {
+                Some(path)
+            } else {
+                path.strip_prefix(self.path).ok()
+            }
+        };
+        if let Some(relative_path) = relative_path {
+            self.index.items.iter().find(|i| *i.relative_path == *relative_path)
+        } else {
+            None
+        }
     }
 
     pub fn newest_version_for(&self, item: RepositoryItem) -> ItemVersion {
         ItemVersion("")
+    }
+
+    fn get_all_files_recursively(path: &Path) -> Result<Vec<Box<Path>>, BakareError> {
+        let walker = WalkDir::new(path);
+
+        let mut result = vec![];
+
+        for maybe_entry in walker {
+            let entry = maybe_entry?;
+            if entry.path() == path {
+                continue;
+            }
+            if entry.path().is_file() {
+                result.push(Box::from(entry.path()));
+            }
+        }
+
+        Ok(result)
     }
 }

@@ -14,8 +14,11 @@ pub struct Engine<'a> {
 }
 
 impl<'a> Engine<'a> {
-    pub fn new(repository: &'a Repository, target_path: &'a Path) -> Self {
-        Engine { repository, target_path }
+    pub fn new(repository: &'a Repository, target_path: &'a Path) -> Result<Self, BakareError> {
+        if !target_path.is_absolute() {
+            return Err(BakareError::PathToStoreNotAbsolute);
+        }
+        Ok(Engine { repository, target_path })
     }
 
     pub fn restore_all(&self) -> Result<(), BakareError> {
@@ -27,6 +30,7 @@ impl<'a> Engine<'a> {
 
     fn restore(&self, item: &RepositoryItem) -> Result<(), BakareError> {
         println!("restoring {:#?}", item);
+        item.save(self.target_path)?;
         Ok(())
     }
 
