@@ -8,6 +8,7 @@ use crate::repository_item::RepositoryItem;
 pub struct IndexItem {
     relative_path: String,
     original_source_path: String,
+    version: Box<[u8]>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -56,7 +57,7 @@ impl Index {
         let original_source_path = Path::new(index_item.original_source_path.as_str());
         let absolute_path = repository_path.join(relative_path);
         let absolute_path = absolute_path.as_path();
-        RepositoryItem::from(original_source_path, absolute_path, relative_path)
+        RepositoryItem::from(original_source_path, absolute_path, relative_path, index_item.version)
     }
 }
 
@@ -65,6 +66,7 @@ impl From<RepositoryItem> for IndexItem {
         IndexItem {
             relative_path: i.relative_path().to_string_lossy().to_string(),
             original_source_path: i.original_source_path().to_string_lossy().to_string(),
+            version: i.version(),
         }
     }
 }

@@ -1,4 +1,6 @@
 use crate::error::BakareError;
+use sha2::digest::DynDigest;
+use sha2::{Digest, Sha512};
 use std::fs;
 use std::path::Path;
 
@@ -7,14 +9,16 @@ pub struct RepositoryItem {
     relative_path: Box<Path>,
     absolute_path: Box<Path>,
     original_source_path: Box<Path>,
+    version: Box<[u8]>,
 }
 
 impl RepositoryItem {
-    pub fn from(original_source_path: &Path, absolute_path: &Path, relative_path: &Path) -> Self {
+    pub fn from(original_source_path: &Path, absolute_path: &Path, relative_path: &Path, version: Box<[u8]>) -> Self {
         RepositoryItem {
             relative_path: Box::from(relative_path),
             absolute_path: Box::from(absolute_path),
             original_source_path: Box::from(original_source_path),
+            version,
         }
     }
     pub fn save(&self, save_to: &Path) -> Result<(), BakareError> {
@@ -43,5 +47,9 @@ impl RepositoryItem {
 
     pub fn original_source_path(&self) -> &Path {
         &self.original_source_path
+    }
+
+    pub fn version(&self) -> Box<[u8]> {
+        self.version.clone()
     }
 }

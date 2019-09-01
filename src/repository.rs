@@ -4,7 +4,10 @@ use std::path::Path;
 use crate::error::BakareError;
 use crate::index::{Index, IndexIterator};
 use crate::repository_item::RepositoryItem;
+use sha2::Digest;
+use sha2::Sha512;
 use std::fs::File;
+use std::io::{BufReader, Read};
 
 /// represents a place where backup is stored an can be restored from.
 /// right now only on-disk directory storage is supported
@@ -66,18 +69,39 @@ impl<'a> Repository<'a> {
         if source_path.is_dir() {
             fs::create_dir(destination_path)?;
         }
+
         if source_path.is_file() {
             println!("storing {} as {}", source_path.display(), destination_path.display());
             fs::create_dir_all(destination_path.parent().unwrap())?;
+            let version = Repository::calculate_initial_version(source_path)?;
             fs::copy(source_path, destination_path)?;
 
             self.index.remember(RepositoryItem::from(
                 source_path,
                 destination_path,
                 destination_path.strip_prefix(self.path)?,
+                Box::from(version),
             ));
         }
         Ok(())
+    }
+
+    fn calculate_initial_version(source_path: &Path) -> Result<Box<[u8]>, BakareError> {
+        let source_file = File::open(source_path)?;
+        let mut reader = BufReader::new(source_file);
+        let mut buffer = Vec::with_capacity(1024);
+        let mut hasher = Sha512::new();
+
+        loop {
+            let count = reader.read(&mut buffer)?;
+            if count == 0 {
+                break;
+            }
+            hasher.input(&buffer);
+        }
+
+        let version = hasher.result();
+        Ok(Box::from(version.as_slice()))
     }
 
     pub fn item_by_source_path(&self, path: &Path) -> Result<Option<RepositoryItem>, BakareError> {
