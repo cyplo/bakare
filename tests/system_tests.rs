@@ -5,11 +5,11 @@ use bakare::source::TempSource;
 
 use bakare::error::BakareError;
 use bakare::repository::Repository;
-use dir_diff::is_different;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 use tempfile::tempdir;
+use walkdir::WalkDir;
 
 #[test]
 fn restore_backed_up_files() -> Result<(), BakareError> {
@@ -85,10 +85,45 @@ fn assert_same_after_restore(source_path: &Path) -> Result<(), BakareError> {
         let restore_engine = restore::Engine::new(&restore_repository, &restore_target)?;
         restore_engine.restore_all()?;
     }
-    let are_source_and_target_different = is_different(source_path, &restore_target).unwrap();
-    assert!(!are_source_and_target_different);
+
+    assert_directory_trees_have_same_contents(source_path, restore_target.as_path())?;
     Ok(())
 }
 
+fn assert_directory_trees_have_same_contents(left: &Path, right: &Path) -> Result<(), BakareError> {
+    let left_files = get_sorted_files_recursively(left)?;
+    let right_files = get_sorted_files_recursively(right)?;
+
+    let pairs = left_files.iter().zip(right_files);
+    for (l, r) in pairs {
+        assert_eq!(l.file_name(), r.file_name());
+        let mut fl = File::open(l)?;
+        let mut fr = File::open(r)?;
+        let mut bl = vec![];
+        let mut br = vec![];
+        fl.read_to_end(&mut bl)?;
+        fr.read_to_end(&mut br)?;
+        assert_eq!(bl, bl);
+    }
+    Ok(())
+}
+
+fn get_sorted_files_recursively(path: &Path) -> Result<Vec<Box<Path>>, BakareError> {
+    let walker = WalkDir::new(path).sort_by(|a, b| a.file_name().cmp(b.file_name()));
+
+    let mut result = vec![];
+
+    for maybe_entry in walker {
+        let entry = maybe_entry?;
+        if entry.path() == path {
+            continue;
+        }
+        if entry.path().is_file() {
+            result.push(Box::from(entry.path()));
+        }
+    }
+
+    Ok(result)
+}
 // TODO: restore latest version by default
 // TODO: deduplicate data

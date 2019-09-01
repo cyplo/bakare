@@ -37,14 +37,4 @@ impl<'a> Engine<'a> {
     pub fn restore_as_of_version(&self, item: &RepositoryItem, version: &ItemVersion) -> Result<(), BakareError> {
         unimplemented!()
     }
-
-    fn process_entry(&self, entry: &DirEntry) -> Result<(), BakareError> {
-        if entry.file_type().is_dir() {
-            fs::create_dir(self.target_path.join(entry.file_name()))?;
-        }
-        if entry.file_type().is_file() {
-            fs::copy(entry.path(), self.target_path.join(entry.file_name()))?;
-        }
-        Ok(())
-    }
 }

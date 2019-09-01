@@ -58,7 +58,7 @@ impl<'a> Iterator for RepositoryIterator<'a> {
     type Item = &'a RepositoryItem<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.index.items.is_empty() || self.current_item_number >= self.index.items.len() - 1 {
+        if self.index.items.is_empty() || self.current_item_number > self.index.items.len() - 1 {
             None
         } else {
             let current_item_number = self.current_item_number;
