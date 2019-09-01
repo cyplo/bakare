@@ -5,8 +5,7 @@ use walkdir::DirEntry;
 
 use crate::error::BakareError;
 use crate::repository::Repository;
-use crate::repository::RepositoryItem;
-use crate::ItemVersion;
+use crate::repository_item::RepositoryItem;
 
 pub struct Engine<'a> {
     repository: &'a Repository<'a>,
@@ -23,7 +22,7 @@ impl<'a> Engine<'a> {
 
     pub fn restore_all(&self) -> Result<(), BakareError> {
         for item in self.repository.iter() {
-            self.restore(item)?;
+            self.restore(&item)?;
         }
         Ok(())
     }
@@ -32,9 +31,5 @@ impl<'a> Engine<'a> {
         println!("restoring {:#?}", item);
         item.save(self.target_path)?;
         Ok(())
-    }
-
-    pub fn restore_as_of_version(&self, item: &RepositoryItem, version: &ItemVersion) -> Result<(), BakareError> {
-        unimplemented!()
     }
 }

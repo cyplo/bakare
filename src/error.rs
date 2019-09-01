@@ -17,6 +17,8 @@ pub enum BakareError {
     DirectoryNotFile,
     #[fail(display = "corrupted repository - cannot find file")]
     CorruptedRepoNoFile,
+    #[fail(display = "index loading error")]
+    IndexLoadingError,
 }
 
 impl From<io::Error> for BakareError {
@@ -34,5 +36,11 @@ impl From<walkdir::Error> for BakareError {
 impl From<StripPrefixError> for BakareError {
     fn from(_: StripPrefixError) -> Self {
         BakareError::IOError(None)
+    }
+}
+
+impl From<rmp_serde::decode::Error> for BakareError {
+    fn from(_: rmp_serde::decode::Error) -> Self {
+        BakareError::IndexLoadingError
     }
 }
