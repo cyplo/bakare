@@ -6,7 +6,6 @@ use walkdir::WalkDir;
 use crate::error::BakareError;
 use crate::index::{Index, IndexIterator};
 use crate::repository_item::RepositoryItem;
-use rmp_serde::{Deserializer, Serializer};
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 
@@ -17,7 +16,7 @@ use std::fs::File;
 pub struct Repository<'a> {
     /// absolute path to where the repository is stored on disk
     path: &'a Path,
-    index: Index<'a>,
+    index: Index,
 }
 
 pub struct RepositoryIterator<'a> {
@@ -33,6 +32,13 @@ impl<'a> Iterator for RepositoryIterator<'a> {
 }
 
 impl<'a> Repository<'a> {
+    pub fn init(path: &Path) -> Result<(), BakareError> {
+        let index = Index::new(path);
+        let index_file = File::create(index.index_file_path())?;
+        serde_cbor::to_writer(index_file, &index)?;
+        Ok(())
+    }
+
     pub fn open(path: &Path) -> Result<Repository, BakareError> {
         if !path.is_absolute() {
             return Err(BakareError::RepositoryPathNotAbsolute);
@@ -40,9 +46,7 @@ impl<'a> Repository<'a> {
 
         let index_file_path = path.join("index");
         let index_file = File::open(index_file_path)?;
-        let mut deserializer = Deserializer::from_read(index_file);
-        let index: Result<Index, _> = Deserialize::deserialize(&mut deserializer);
-        let index = index?;
+        let index: Index = serde_cbor::from_reader(index_file)?;
 
         Ok(Repository { path, index })
     }

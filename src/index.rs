@@ -1,6 +1,5 @@
 use std::path::Path;
 
-use rmp_serde::{Deserializer, Serializer};
 use serde::{Deserialize, Serialize};
 
 use crate::repository_item::RepositoryItem;
@@ -12,13 +11,25 @@ pub struct IndexItem {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct Index<'a> {
+pub struct Index {
     items: Vec<IndexItem>,
-    index_path: &'a str,
-    repository_path: &'a str,
+    index_path: String,
+    repository_path: String,
 }
 
-impl<'a> Index<'a> {
+impl Index {
+    pub fn new(repository_path: &Path) -> Self {
+        Index {
+            items: vec![],
+            index_path: repository_path.join("index").to_string_lossy().to_string(),
+            repository_path: repository_path.to_string_lossy().to_string(),
+        }
+    }
+
+    pub fn index_file_path(&self) -> &Path {
+        Path::new(&self.index_path)
+    }
+
     pub fn len(&self) -> usize {
         self.items.len()
     }
@@ -41,7 +52,7 @@ impl<'a> Index<'a> {
     fn repository_item(&self, i: &IndexItem) -> RepositoryItem {
         let index_item = i.clone();
         let relative_path = Path::new(index_item.relative_path.as_str());
-        let repository_path = Path::new(self.repository_path);
+        let repository_path = Path::new(&self.repository_path);
         let original_source_path = Path::new(index_item.original_source_path.as_str());
         let absolute_path = repository_path.join(relative_path);
         let absolute_path = absolute_path.as_path();
@@ -59,7 +70,7 @@ impl From<RepositoryItem> for IndexItem {
 }
 
 pub struct IndexIterator<'a> {
-    index: &'a Index<'a>,
+    index: &'a Index,
     current_item_number: usize,
 }
 

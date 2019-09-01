@@ -39,8 +39,8 @@ impl From<StripPrefixError> for BakareError {
     }
 }
 
-impl From<rmp_serde::decode::Error> for BakareError {
-    fn from(_: rmp_serde::decode::Error) -> Self {
+impl From<serde_cbor::Error> for BakareError {
+    fn from(_: serde_cbor::Error) -> Self {
         BakareError::IndexLoadingError
     }
 }
