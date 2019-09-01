@@ -1,5 +1,5 @@
-use std::fs;
 use std::path::Path;
+use std::{fs, io};
 
 use crate::error::BakareError;
 use crate::index::{Index, IndexIterator};
@@ -89,16 +89,9 @@ impl<'a> Repository<'a> {
     fn calculate_initial_version(source_path: &Path) -> Result<Box<[u8]>, BakareError> {
         let source_file = File::open(source_path)?;
         let mut reader = BufReader::new(source_file);
-        let mut buffer = Vec::with_capacity(1024);
         let mut hasher = Sha512::new();
 
-        loop {
-            let count = reader.read(&mut buffer)?;
-            if count == 0 {
-                break;
-            }
-            hasher.input(&buffer);
-        }
+        io::copy(&mut reader, &mut hasher)?;
 
         let version = hasher.result();
         Ok(Box::from(version.as_slice()))
