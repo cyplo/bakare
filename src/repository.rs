@@ -1,12 +1,9 @@
 use std::fs;
 use std::path::Path;
 
-use walkdir::WalkDir;
-
 use crate::error::BakareError;
 use crate::index::{Index, IndexIterator};
 use crate::repository_item::RepositoryItem;
-use serde::{Deserialize, Serialize};
 use std::fs::File;
 
 /// represents a place where backup is stored an can be restored from.
@@ -94,23 +91,5 @@ impl<'a> Repository<'a> {
             return Err(BakareError::RepositoryPathNotAbsolute);
         }
         Ok(self.iter().find(|i| i.original_source_path() == path))
-    }
-
-    fn get_all_files_recursively(path: &Path) -> Result<Vec<Box<Path>>, BakareError> {
-        let walker = WalkDir::new(path);
-
-        let mut result = vec![];
-
-        for maybe_entry in walker {
-            let entry = maybe_entry?;
-            if entry.path() == path {
-                continue;
-            }
-            if entry.path().is_file() {
-                result.push(Box::from(entry.path()));
-            }
-        }
-
-        Ok(result)
     }
 }

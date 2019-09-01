@@ -1,7 +1,4 @@
-use std::fs;
 use std::path::Path;
-
-use walkdir::DirEntry;
 
 use crate::error::BakareError;
 use crate::repository::Repository;

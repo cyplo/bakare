@@ -26,13 +26,13 @@ fn restore_backed_up_files() -> Result<(), BakareError> {
 fn restore_older_version_of_file() -> Result<(), BakareError> {
     let source = TempSource::new()?;
     let repository_path = tempdir()?.into_path();
-    let restore_repository = Repository::open(repository_path.as_path())?;
+    //let restore_repository = Repository::open(repository_path.as_path())?;
 
     let relative_path_text = "some path";
     let file_path = source.file_path(relative_path_text);
     let new_contents = "totally new contents";
     let restore_target = tempdir()?;
-    let restore_engine = restore::Engine::new(&restore_repository, &restore_target.path())?;
+    //let restore_engine = restore::Engine::new(&restore_repository, &restore_target.path())?;
     let old_contents = "some old contents";
 
     {
@@ -45,7 +45,7 @@ fn restore_older_version_of_file() -> Result<(), BakareError> {
     let reading_repository = Repository::open(repository_path.as_path())?;
     let file_id = reading_repository.item_by_source_path(&file_path)?;
     assert!(file_id.is_some());
-    let file_id = file_id.unwrap();
+    //let file_id = file_id.unwrap();
     //let old_version = file_id.version();
 
     {
