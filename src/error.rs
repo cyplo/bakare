@@ -6,6 +6,12 @@ use failure::Fail;
 pub enum BakareError {
     #[fail(display = "io error")]
     IOError,
+    #[fail(display = "backup source same as repository")]
+    SourceSameAsRepository,
+    #[fail(display = "repository path is not absolute")]
+    RepositoryPathNotAbsolute,
+    #[fail(display = "path to store is not absolute")]
+    PathToStoreNotAbsolute,
 }
 
 impl From<io::Error> for BakareError {

@@ -7,7 +7,7 @@ pub mod source;
 
 pub mod repository;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct ItemVersion<'a>(&'a str);
 
 #[derive(Copy, Clone)]

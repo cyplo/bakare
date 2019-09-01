@@ -70,7 +70,10 @@ fn assert_target_file_contents(target: &Path, filename: &str, expected_contents:
 
 fn assert_same_after_restore(source_path: &Path) -> Result<(), BakareError> {
     let repository_path = tempdir()?.into_path();
-    let restore_target = tempdir()?;
+    let restore_target = tempdir()?.into_path();
+
+    assert_ne!(source_path, repository_path);
+    assert_ne!(repository_path, restore_target);
 
     {
         let mut backup_repository = Repository::open(repository_path.as_path())?;
@@ -78,11 +81,11 @@ fn assert_same_after_restore(source_path: &Path) -> Result<(), BakareError> {
         backup_engine.backup()?;
     }
     {
-        let mut restore_repository = Repository::open(repository_path.as_path())?;
-        let restore_engine = restore::Engine::new(&mut restore_repository, &restore_target.path());
+        let restore_repository = Repository::open(repository_path.as_path())?;
+        let restore_engine = restore::Engine::new(&restore_repository, &restore_target);
         restore_engine.restore_all()?;
     }
-    let are_source_and_target_different = is_different(source_path, &restore_target.path()).unwrap();
+    let are_source_and_target_different = is_different(source_path, &restore_target).unwrap();
     assert!(!are_source_and_target_different);
     Ok(())
 }

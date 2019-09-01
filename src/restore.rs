@@ -4,9 +4,9 @@ use std::path::Path;
 use walkdir::DirEntry;
 
 use crate::error::BakareError;
-use crate::ItemVersion;
 use crate::repository::Repository;
 use crate::repository::RepositoryItem;
+use crate::ItemVersion;
 
 pub struct Engine<'a> {
     repository: &'a Repository<'a>,
@@ -19,14 +19,15 @@ impl<'a> Engine<'a> {
     }
 
     pub fn restore_all(&self) -> Result<(), BakareError> {
-        for ref item in self.repository.iter() {
+        for item in self.repository.iter() {
             self.restore(item)?;
         }
         Ok(())
     }
 
     fn restore(&self, item: &RepositoryItem) -> Result<(), BakareError> {
-        unimplemented!()
+        println!("restoring {:#?}", item);
+        Ok(())
     }
 
     pub fn restore_as_of_version(&self, item: &RepositoryItem, version: &ItemVersion) -> Result<(), BakareError> {

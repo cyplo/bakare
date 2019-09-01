@@ -22,7 +22,7 @@ pub struct Repository<'a> {
     newest_index_version: IndexVersion,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct RepositoryItem<'a> {
     version: ItemVersion<'a>,
     relative_path: Box<Path>,
@@ -55,22 +55,47 @@ impl<'a> RepositoryItem<'a> {
 }
 
 impl<'a> Repository<'a> {
-    pub fn open(path: &Path) -> Result<Repository, BakareError> {
+    fn get_all_files_recursively(path: &Path) -> Result<Vec<Box<Path>>, BakareError> {
+        let path_text = path.to_string_lossy();
         let walker = WalkDir::new(path);
-        let all_files: Result<Vec<DirEntry>, _> = walker
-            .into_iter()
-            .filter_entry(|e| e.path() != path && !e.path().is_dir())
-            .collect();
-        let all_files = all_files?;
+
+        let mut result = vec![];
+
+        for maybe_entry in walker {
+            let entry = maybe_entry?;
+            if entry.path() != path {
+                if entry.path().is_file() {
+                    result.push(Box::from(path));
+                }
+                if entry.path().is_dir() {
+                    let children = Repository::get_all_files_recursively(entry.path())?;
+
+                    for child in children {
+                        result.push(child);
+                    }
+                }
+            }
+        }
+
+        Ok(result)
+    }
+    pub fn open(path: &Path) -> Result<Repository, BakareError> {
+        if !path.is_absolute() {
+            return Err(BakareError::RepositoryPathNotAbsolute);
+        }
+        println!("opening repository at {}", path.display());
+
+        let all_files = Repository::get_all_files_recursively(path)?;
         let all_items: Vec<RepositoryItem> = all_files
             .into_iter()
             .map(|p| RepositoryItem {
                 version: ItemVersion(""),
-                relative_path: Box::from(p.path()),
+                relative_path: p,
             })
             .collect();
 
         let version = IndexVersion;
+        println!("opened repository at {} - {} items present", path.display(), all_items.len());
         Ok(Repository {
             path,
             index: IndexViewReadonly {
@@ -90,15 +115,24 @@ impl<'a> Repository<'a> {
     }
 
     pub fn store(&mut self, source_path: &Path) -> Result<(), BakareError> {
-        let destination_path = self.path.join(source_path);
+        if !source_path.is_absolute() {
+            return Err(BakareError::PathToStoreNotAbsolute);
+        }
+        let destination_path: &str = &(self.path.to_string_lossy() + source_path.to_string_lossy());
+        let destination_path = Path::new(&destination_path);
+        if source_path == destination_path {
+            return Err(BakareError::SourceSameAsRepository);
+        }
         if source_path.is_dir() {
-            fs::create_dir(destination_path.clone())?;
+            fs::create_dir(destination_path)?;
         }
         if source_path.is_file() {
-            // TODO: copy file
+            println!("storing {} as {}", source_path.display(), destination_path.display());
+            fs::create_dir_all(destination_path.parent().unwrap())?;
+            fs::copy(source_path, destination_path)?;
             self.index.items.push(RepositoryItem {
                 version: ItemVersion(""),
-                relative_path: destination_path.into_boxed_path(),
+                relative_path: Box::from(destination_path),
             });
         }
         Ok(())
