@@ -80,7 +80,7 @@ impl<'a> Repository<'a> {
                 source_path,
                 destination_path,
                 destination_path.strip_prefix(self.path)?,
-                Box::from(version),
+                version,
             ));
         }
         Ok(())
