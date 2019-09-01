@@ -7,15 +7,15 @@ use crate::repository::Repository;
 
 pub struct Engine<'a> {
     source_path: &'a Path,
-    repository: &'a Repository<'a>,
+    repository: &'a mut Repository<'a>,
 }
 
 impl<'a> Engine<'a> {
-    pub fn new(source_path: &'a Path, repository: &'a Repository) -> Self {
+    pub fn new(source_path: &'a Path, repository: &'a mut Repository<'a>) -> Self {
         Engine { source_path, repository }
     }
 
-    pub fn backup(&self) -> Result<(), BakareError> {
+    pub fn backup(&mut self) -> Result<(), BakareError> {
         let walker = WalkDir::new(self.source_path);
         for maybe_entry in walker {
             let entry = maybe_entry?;

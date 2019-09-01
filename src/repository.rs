@@ -25,7 +25,7 @@ pub struct Repository<'a> {
 #[derive(Clone)]
 pub struct RepositoryItem<'a> {
     version: ItemVersion<'a>,
-    relative_path: Rc<Path>,
+    relative_path: Box<Path>,
 }
 
 pub struct RepositoryIterator<'a> {
@@ -66,7 +66,7 @@ impl<'a> Repository<'a> {
             .into_iter()
             .map(|p| RepositoryItem {
                 version: ItemVersion(""),
-                relative_path: Rc::from(p.path()),
+                relative_path: Box::from(p.path()),
             })
             .collect();
 
@@ -89,25 +89,23 @@ impl<'a> Repository<'a> {
         }
     }
 
-    pub fn store(&self, source_path: &Path) -> Result<(), BakareError> {
-        // get file id -> contents hash + original path + time of taking notes
-        // get storage path for File
-        // store file contents
-        // remember File
-
+    pub fn store(&mut self, source_path: &Path) -> Result<(), BakareError> {
         let destination_path = self.path.join(source_path);
         if source_path.is_dir() {
             fs::create_dir(destination_path.clone())?;
         }
-        if source_path.is_file() {}
-
-        // TODO create new version, remember source_path
-
+        if source_path.is_file() {
+            // TODO: copy file
+            self.index.items.push(RepositoryItem {
+                version: ItemVersion(""),
+                relative_path: destination_path.into_boxed_path(),
+            });
+        }
         Ok(())
     }
 
     pub fn item(&self, path: &Path) -> Option<&RepositoryItem> {
-        None
+        self.index.items.iter().find(|i| *i.relative_path == *path)
     }
 
     pub fn newest_version_for(&self, item: RepositoryItem) -> ItemVersion {
