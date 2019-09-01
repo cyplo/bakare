@@ -1,10 +1,15 @@
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+
+use walkdir::{DirEntry, WalkDir};
 
 use crate::error::BakareError;
 use crate::IndexVersion;
 use crate::IndexViewReadonly;
 use crate::ItemVersion;
+use std::borrow::Cow;
+use std::rc::Rc;
+use std::sync::Arc;
 
 /// represents a place where backup is stored an can be restored from.
 /// right now only on-disk directory storage is supported
@@ -17,9 +22,10 @@ pub struct Repository<'a> {
     newest_index_version: IndexVersion,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct RepositoryItem<'a> {
     version: ItemVersion<'a>,
+    relative_path: Rc<Path>,
 }
 
 pub struct RepositoryIterator<'a> {
@@ -29,7 +35,7 @@ pub struct RepositoryIterator<'a> {
 }
 
 impl<'a> Iterator for RepositoryIterator<'a> {
-    type Item = RepositoryItem<'a>;
+    type Item = &'a RepositoryItem<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.index.items.is_empty() || self.current_item_number >= self.index.items.len() - 1 {
@@ -37,7 +43,7 @@ impl<'a> Iterator for RepositoryIterator<'a> {
         } else {
             let current_item_number = self.current_item_number;
             self.current_item_number += 1;
-            Some(self.index.items[current_item_number])
+            Some(&self.index.items[current_item_number])
         }
     }
 }
@@ -50,14 +56,26 @@ impl<'a> RepositoryItem<'a> {
 
 impl<'a> Repository<'a> {
     pub fn open(path: &Path) -> Result<Repository, BakareError> {
-        // TODO open index from file
+        let walker = WalkDir::new(path);
+        let all_files: Result<Vec<DirEntry>, _> = walker
+            .into_iter()
+            .filter_entry(|e| e.path() != path && !e.path().is_dir())
+            .collect();
+        let all_files = all_files?;
+        let all_items: Vec<RepositoryItem> = all_files
+            .into_iter()
+            .map(|p| RepositoryItem {
+                version: ItemVersion(""),
+                relative_path: Rc::from(p.path()),
+            })
+            .collect();
 
         let version = IndexVersion;
         Ok(Repository {
             path,
             index: IndexViewReadonly {
                 index_version: version,
-                items: vec![],
+                items: all_items,
             },
             newest_index_version: version,
         })
@@ -88,11 +106,11 @@ impl<'a> Repository<'a> {
         Ok(())
     }
 
-    pub fn item(&self, path: &Path) -> Option<RepositoryItem> {
+    pub fn item(&self, path: &Path) -> Option<&RepositoryItem> {
         None
     }
 
-    pub fn newest_version_for(&self, source_path: &Path) -> Result<ItemVersion, BakareError> {
-        Err(BakareError::UnknownSourcePathError)
+    pub fn newest_version_for(&self, item: RepositoryItem) -> ItemVersion {
+        ItemVersion("")
     }
 }

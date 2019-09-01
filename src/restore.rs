@@ -4,9 +4,9 @@ use std::path::Path;
 use walkdir::DirEntry;
 
 use crate::error::BakareError;
+use crate::ItemVersion;
 use crate::repository::Repository;
 use crate::repository::RepositoryItem;
-use crate::ItemVersion;
 
 pub struct Engine<'a> {
     repository: &'a Repository<'a>,

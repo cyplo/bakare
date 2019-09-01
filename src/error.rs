@@ -6,8 +6,6 @@ use failure::Fail;
 pub enum BakareError {
     #[fail(display = "io error")]
     IOError,
-    #[fail(display = "unknown source path")]
-    UnknownSourcePathError,
 }
 
 impl From<io::Error> for BakareError {
