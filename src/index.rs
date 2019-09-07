@@ -1,15 +1,11 @@
+use std::fs::File;
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
 use crate::error::BakareError;
+use crate::repository::ItemVersion;
 use crate::repository_item::RepositoryItem;
-use std::fmt;
-use std::fmt::Formatter;
-use std::fs::File;
-
-#[derive(Clone, Debug, PartialOrd, PartialEq, Ord, Eq, Serialize, Deserialize)]
-pub struct ItemVersion(Box<[u8]>);
 
 #[derive(Clone, Debug, PartialOrd, PartialEq, Ord, Eq, Serialize, Deserialize)]
 pub struct IndexItem {
@@ -23,24 +19,6 @@ pub struct Index {
     items: Vec<IndexItem>,
     index_path: String,
     repository_path: String,
-}
-
-impl AsRef<[u8]> for ItemVersion {
-    fn as_ref(&self) -> &[u8] {
-        &self.0
-    }
-}
-
-impl From<&[u8]> for ItemVersion {
-    fn from(a: &[u8]) -> Self {
-        ItemVersion(Box::from(a))
-    }
-}
-
-impl fmt::Display for ItemVersion {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", hex::encode(self))
-    }
 }
 
 impl Index {

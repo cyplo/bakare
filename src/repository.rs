@@ -1,11 +1,13 @@
 use std::path::Path;
-use std::{fs, io};
+use std::{fmt, fs, io};
 
 use crate::error::BakareError;
-use crate::index::{Index, IndexIterator, ItemVersion};
+use crate::index::{Index, IndexIterator};
 use crate::repository_item::RepositoryItem;
+use serde::{Deserialize, Serialize};
 use sha2::Digest;
 use sha2::Sha512;
+use std::fmt::Formatter;
 use std::fs::File;
 use std::io::BufReader;
 
@@ -17,6 +19,27 @@ pub struct Repository<'a> {
     /// absolute path to where the repository is stored on disk
     path: &'a Path,
     index: Index,
+}
+
+#[derive(Clone, Debug, PartialOrd, PartialEq, Ord, Eq, Serialize, Deserialize)]
+pub struct ItemVersion(Box<[u8]>);
+
+impl AsRef<[u8]> for ItemVersion {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+impl From<&[u8]> for ItemVersion {
+    fn from(a: &[u8]) -> Self {
+        ItemVersion(Box::from(a))
+    }
+}
+
+impl fmt::Display for ItemVersion {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", hex::encode(self))
+    }
 }
 
 pub struct RepositoryIterator<'a> {

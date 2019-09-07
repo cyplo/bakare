@@ -1,5 +1,5 @@
 use crate::error::BakareError;
-use crate::index::ItemVersion;
+use crate::repository::ItemVersion;
 use std::fmt::{Display, Formatter};
 use std::path::Path;
 use std::{fmt, fs};

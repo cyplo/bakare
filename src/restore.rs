@@ -1,7 +1,6 @@
 use std::path::Path;
 
 use crate::error::BakareError;
-use crate::index::ItemVersion;
 use crate::repository::Repository;
 use crate::repository_item::RepositoryItem;
 
