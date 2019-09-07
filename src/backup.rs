@@ -11,8 +11,11 @@ pub struct Engine<'a> {
 }
 
 impl<'a> Engine<'a> {
-    pub fn new(source_path: &'a Path, repository: &'a mut Repository<'a>) -> Self {
-        Engine { source_path, repository }
+    pub fn new(source_path: &'a Path, repository: &'a mut Repository<'a>) -> Result<Self, BakareError> {
+        if source_path.ancestors().any(|a| a == repository.path()) {
+            return Err(BakareError::SourceSameAsRepository);
+        }
+        Ok(Engine { source_path, repository })
     }
 
     pub fn backup(&mut self) -> Result<(), BakareError> {

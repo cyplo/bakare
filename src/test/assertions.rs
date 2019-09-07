@@ -6,10 +6,10 @@ use std::path::Path;
 use tempfile::tempdir;
 use walkdir::WalkDir;
 
-use crate::{backup, restore};
 use crate::error::BakareError;
 use crate::repository::{ItemVersion, Repository};
 use crate::source::TempSource;
+use crate::{backup, restore};
 
 pub fn assert_target_file_contents(restored_path: &Path, expected_contents: &str) -> Result<(), BakareError> {
     let mut actual_contents = String::new();
@@ -29,7 +29,7 @@ pub fn assert_same_after_restore(source_path: &Path) -> Result<(), BakareError> 
     Repository::init(repository_path.as_path())?;
     {
         let mut backup_repository = Repository::open(repository_path.as_path())?;
-        let mut backup_engine = backup::Engine::new(source_path, &mut backup_repository);
+        let mut backup_engine = backup::Engine::new(source_path, &mut backup_repository)?;
         backup_engine.backup()?;
     }
     {
@@ -96,7 +96,7 @@ pub fn backup_file_with_contents(
 ) -> Result<(), BakareError> {
     {
         let mut backup_repository = Repository::open(repository_path)?;
-        let mut backup_engine = backup::Engine::new(source.path(), &mut backup_repository);
+        let mut backup_engine = backup::Engine::new(source.path(), &mut backup_repository)?;
         source.write_text_to_file(source_file_relative_path, contents)?;
         backup_engine.backup()?;
         Ok(())

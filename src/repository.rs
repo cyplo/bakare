@@ -76,6 +76,10 @@ impl<'a> Repository<'a> {
         }
     }
 
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+
     pub fn store(&mut self, source_path: &Path) -> Result<(), BakareError> {
         if !source_path.is_absolute() {
             return Err(BakareError::PathToStoreNotAbsolute);

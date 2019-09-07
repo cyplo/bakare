@@ -1,5 +1,6 @@
 use tempfile::tempdir;
 
+use bakare::backup;
 use bakare::error::BakareError;
 use bakare::repository::Repository;
 use bakare::source::TempSource;
@@ -54,6 +55,23 @@ fn restore_older_version_of_file() -> Result<(), BakareError> {
     backup_file_with_contents(&source, &repository_path, source_file_relative_path, new_contents)?;
 
     assert_restored_from_version_has_contents(&repository_path, &source_file_full_path, old_contents, &old_version)
+}
+
+#[test]
+fn forbid_backup_of_paths_within_repository() -> Result<(), BakareError> {
+    let repository_path = &tempdir()?.into_path();
+    Repository::init(repository_path)?;
+    let mut repository = Repository::open(repository_path)?;
+    if let Err(e) = backup::Engine::new(repository_path, &mut repository) {
+        let correct_error = match e {
+            BakareError::SourceSameAsRepository => true,
+            _ => false,
+        };
+        assert!(correct_error);
+    } else {
+        panic!("Expected error");
+    }
+    Ok(())
 }
 
 // TODO: restore latest version by default
