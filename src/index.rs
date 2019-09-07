@@ -30,14 +30,6 @@ impl AsRef<[u8]> for ItemVersion {
     }
 }
 
-impl Deref for ItemVersion {
-    type Target = [u8];
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
 impl From<&[u8]> for ItemVersion {
     fn from(a: &[u8]) -> Self {
         ItemVersion(Box::from(a))
