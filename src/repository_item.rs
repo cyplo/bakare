@@ -20,12 +20,16 @@ impl RepositoryItem {
             version,
         }
     }
+
     pub fn save(&self, save_to: &Path) -> Result<(), BakareError> {
         if !save_to.is_absolute() {
             return Err(BakareError::PathToStoreNotAbsolute);
         }
 
-        let target_path = save_to.join(self.relative_path.clone());
+        let target_path = save_to.join(&self.relative_path);
+        if !target_path.is_absolute() {
+            return Err(BakareError::PathToStoreNotAbsolute);
+        }
         let parent = target_path.parent().unwrap();
         if !parent.exists() {
             println!("Creating {}", parent.display());
@@ -35,7 +39,7 @@ impl RepositoryItem {
             return Err(BakareError::CorruptedRepoNoFile);
         }
         println!("Saving {} to {}", self.absolute_path.display(), target_path.display());
-        fs::copy(self.absolute_path.clone(), target_path.clone())?;
+        fs::copy(&self.absolute_path, &target_path)?;
 
         Ok(())
     }

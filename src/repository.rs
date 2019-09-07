@@ -69,7 +69,7 @@ impl<'a> Repository<'a> {
         if source_path.is_file() {
             println!("storing {} as {}", source_path.display(), destination_path.display());
             fs::create_dir_all(destination_path.parent().unwrap())?;
-            let version = Repository::calculate_initial_version(source_path)?;
+            let version = Repository::calculate_version(source_path)?;
             fs::copy(source_path, destination_path)?;
 
             self.index.remember(RepositoryItem::from(
@@ -83,7 +83,7 @@ impl<'a> Repository<'a> {
         Ok(())
     }
 
-    fn calculate_initial_version(source_path: &Path) -> Result<Box<[u8]>, BakareError> {
+    fn calculate_version(source_path: &Path) -> Result<Box<[u8]>, BakareError> {
         let source_file = File::open(source_path)?;
         let mut reader = BufReader::new(source_file);
         let mut hasher = Sha512::new();

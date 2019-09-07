@@ -68,9 +68,9 @@ impl Index {
 
     fn repository_item(&self, i: &IndexItem) -> RepositoryItem {
         let index_item = i.clone();
-        let relative_path = Path::new(index_item.relative_path.as_str());
+        let relative_path = Path::new(&index_item.relative_path);
         let repository_path = Path::new(&self.repository_path);
-        let original_source_path = Path::new(index_item.original_source_path.as_str());
+        let original_source_path = Path::new(&index_item.original_source_path);
         let absolute_path = repository_path.join(relative_path);
         let absolute_path = absolute_path.as_path();
         RepositoryItem::from(original_source_path, absolute_path, relative_path, index_item.version)

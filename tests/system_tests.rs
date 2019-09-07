@@ -30,13 +30,13 @@ fn restore_files_after_reopening_repository() -> Result<(), BakareError> {
     let restore_target = tempdir()?.into_path();
     Repository::init(repository_path.as_path())?;
 
-    let relative_path_text = "some file path";
+    let source_file_relative_path = "some file path";
     let original_contents = "some old contents";
 
     {
         let mut backup_repository = Repository::open(repository_path.as_path())?;
         let mut backup_engine = backup::Engine::new(source.path(), &mut backup_repository);
-        source.write_text_to_file(relative_path_text, original_contents)?;
+        source.write_text_to_file(source_file_relative_path, original_contents)?;
         backup_engine.backup()?;
     }
 
@@ -46,7 +46,8 @@ fn restore_files_after_reopening_repository() -> Result<(), BakareError> {
         restore_engine.restore_all()?;
     }
 
-    let restored_file_path = restore_target.join(relative_path_text);
+    let source_file_full_path = source.file_path(source_file_relative_path);
+    let restored_file_path = restore_target.join(source_file_full_path.strip_prefix("/")?);
     let contents = fs::read_to_string(restored_file_path)?;
 
     assert_eq!(contents, original_contents);
