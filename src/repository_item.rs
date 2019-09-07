@@ -32,13 +32,11 @@ impl RepositoryItem {
         }
         let parent = target_path.parent().unwrap();
         if !parent.exists() {
-            println!("Creating {}", parent.display());
             fs::create_dir_all(parent)?;
         }
         if !self.absolute_path.exists() {
             return Err(BakareError::CorruptedRepoNoFile);
         }
-        println!("Saving {} to {}", self.absolute_path.display(), target_path.display());
         fs::copy(&self.absolute_path, &target_path)?;
 
         Ok(())

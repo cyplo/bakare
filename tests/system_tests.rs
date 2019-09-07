@@ -137,7 +137,7 @@ fn assert_directory_trees_have_same_contents(left: &Path, right: &Path) -> Resul
         let mut br = vec![];
         fl.read_to_end(&mut bl)?;
         fr.read_to_end(&mut br)?;
-        assert_eq!(bl, bl);
+        assert_eq!(bl, br);
     }
     Ok(())
 }

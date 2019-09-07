@@ -67,7 +67,6 @@ impl<'a> Repository<'a> {
         }
 
         if source_path.is_file() {
-            println!("storing {} as {}", source_path.display(), destination_path.display());
             fs::create_dir_all(destination_path.parent().unwrap())?;
             let version = Repository::calculate_version(source_path)?;
             fs::copy(source_path, destination_path)?;
@@ -95,12 +94,6 @@ impl<'a> Repository<'a> {
     }
 
     pub fn item_by_source_path(&self, path: &Path) -> Result<Option<RepositoryItem>, BakareError> {
-        println!(
-            "trying to find {} in a repo [{}] of {} items",
-            path.display(),
-            self.path.display(),
-            self.index.len()
-        );
         if !path.is_absolute() {
             return Err(BakareError::RepositoryPathNotAbsolute);
         }

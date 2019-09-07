@@ -62,7 +62,6 @@ impl Index {
     }
 
     pub fn remember(&mut self, item: RepositoryItem) {
-        println!("remembering {}", item);
         self.items.push(item.into());
     }
 
