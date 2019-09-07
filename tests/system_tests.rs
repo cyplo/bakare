@@ -75,7 +75,7 @@ fn restore_older_version_of_file() -> Result<(), BakareError> {
     let item = reading_repository.item_by_source_path(&file_path)?;
     assert!(item.is_some());
     let item = item.unwrap();
-    let _old_version = item.version();
+    let old_version = item.version();
 
     {
         let new_contents = "totally new contents";
@@ -87,8 +87,8 @@ fn restore_older_version_of_file() -> Result<(), BakareError> {
 
     let restore_repository = Repository::open(repository_path.as_path())?;
     let restore_target = tempdir()?;
-    let _restore_engine = restore::Engine::new(&restore_repository, &restore_target.path())?;
-    //restore_engine.restore_as_of_version(&item, old_version)?;
+    let restore_engine = restore::Engine::new(&restore_repository, &restore_target.path())?;
+    restore_engine.restore_as_of_version(&item, old_version)?;
 
     assert_target_file_contents(restore_target.path(), relative_path_text, old_contents)
 }
@@ -161,3 +161,5 @@ fn get_sorted_files_recursively(path: &Path) -> Result<Vec<Box<Path>>, BakareErr
 }
 // TODO: restore latest version by default
 // TODO: deduplicate data
+// TODO: test that index is stored separately from data
+// TODO: index corruption

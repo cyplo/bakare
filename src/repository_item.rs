@@ -1,4 +1,5 @@
 use crate::error::BakareError;
+use crate::index::ItemVersion;
 use std::fmt::{Display, Formatter};
 use std::path::Path;
 use std::{fmt, fs};
@@ -8,11 +9,11 @@ pub struct RepositoryItem {
     relative_path: Box<Path>,
     absolute_path: Box<Path>,
     original_source_path: Box<Path>,
-    version: Box<[u8]>,
+    version: ItemVersion,
 }
 
 impl RepositoryItem {
-    pub fn from(original_source_path: &Path, absolute_path: &Path, relative_path: &Path, version: Box<[u8]>) -> Self {
+    pub fn from(original_source_path: &Path, absolute_path: &Path, relative_path: &Path, version: ItemVersion) -> Self {
         RepositoryItem {
             relative_path: Box::from(relative_path),
             absolute_path: Box::from(absolute_path),
@@ -50,8 +51,8 @@ impl RepositoryItem {
         &self.original_source_path
     }
 
-    pub fn version(&self) -> Box<[u8]> {
-        self.version.clone()
+    pub fn version(&self) -> &ItemVersion {
+        &self.version
     }
 }
 

@@ -5,12 +5,16 @@ use serde::{Deserialize, Serialize};
 use crate::error::BakareError;
 use crate::repository_item::RepositoryItem;
 use std::fs::File;
+use std::ops::Deref;
+
+#[derive(Clone, Debug, PartialOrd, PartialEq, Ord, Eq, Serialize, Deserialize)]
+pub struct ItemVersion(Box<[u8]>);
 
 #[derive(Clone, Debug, PartialOrd, PartialEq, Ord, Eq, Serialize, Deserialize)]
 pub struct IndexItem {
     relative_path: String,
     original_source_path: String,
-    version: Box<[u8]>,
+    version: ItemVersion,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -18,6 +22,26 @@ pub struct Index {
     items: Vec<IndexItem>,
     index_path: String,
     repository_path: String,
+}
+
+impl AsRef<[u8]> for ItemVersion {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+impl Deref for ItemVersion {
+    type Target = [u8];
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl From<&[u8]> for ItemVersion {
+    fn from(a: &[u8]) -> Self {
+        ItemVersion(Box::from(a))
+    }
 }
 
 impl Index {
@@ -81,7 +105,7 @@ impl From<RepositoryItem> for IndexItem {
         IndexItem {
             relative_path: i.relative_path().to_string_lossy().to_string(),
             original_source_path: i.original_source_path().to_string_lossy().to_string(),
-            version: i.version(),
+            version: i.version().clone(),
         }
     }
 }

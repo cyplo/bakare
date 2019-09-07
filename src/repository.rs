@@ -2,7 +2,7 @@ use std::path::Path;
 use std::{fs, io};
 
 use crate::error::BakareError;
-use crate::index::{Index, IndexIterator};
+use crate::index::{Index, IndexIterator, ItemVersion};
 use crate::repository_item::RepositoryItem;
 use sha2::Digest;
 use sha2::Sha512;
@@ -82,15 +82,14 @@ impl<'a> Repository<'a> {
         Ok(())
     }
 
-    fn calculate_version(source_path: &Path) -> Result<Box<[u8]>, BakareError> {
+    fn calculate_version(source_path: &Path) -> Result<ItemVersion, BakareError> {
         let source_file = File::open(source_path)?;
         let mut reader = BufReader::new(source_file);
         let mut hasher = Sha512::new();
 
         io::copy(&mut reader, &mut hasher)?;
 
-        let version = hasher.result();
-        Ok(Box::from(version.as_slice()))
+        Ok(hasher.result().as_slice().into())
     }
 
     pub fn item_by_source_path(&self, path: &Path) -> Result<Option<RepositoryItem>, BakareError> {

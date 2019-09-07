@@ -1,6 +1,7 @@
 use std::path::Path;
 
 use crate::error::BakareError;
+use crate::index::ItemVersion;
 use crate::repository::Repository;
 use crate::repository_item::RepositoryItem;
 
@@ -27,6 +28,11 @@ impl<'a> Engine<'a> {
     fn restore(&self, item: &RepositoryItem) -> Result<(), BakareError> {
         println!("restoring {}", item);
         item.save(self.target_path)?;
+        Ok(())
+    }
+
+    pub fn restore_as_of_version(&self, item: &RepositoryItem, version: &ItemVersion) -> Result<(), BakareError> {
+        println!("restoring {}", item);
         Ok(())
     }
 }
