@@ -7,7 +7,7 @@ use crate::repository_item::RepositoryItem;
 use sha2::Digest;
 use sha2::Sha512;
 use std::fs::File;
-use std::io::{BufReader, Read};
+use std::io::BufReader;
 
 /// represents a place where backup is stored an can be restored from.
 /// right now only on-disk directory storage is supported

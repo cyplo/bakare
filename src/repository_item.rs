@@ -1,8 +1,7 @@
 use crate::error::BakareError;
-use sha2::digest::DynDigest;
-use sha2::{Digest, Sha512};
-use std::fs;
+use std::fmt::{Display, Formatter};
 use std::path::Path;
+use std::{fmt, fs};
 
 #[derive(Clone, Debug, PartialOrd, PartialEq, Ord, Eq)]
 pub struct RepositoryItem {
@@ -51,5 +50,16 @@ impl RepositoryItem {
 
     pub fn version(&self) -> Box<[u8]> {
         self.version.clone()
+    }
+}
+
+impl Display for RepositoryItem {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(
+            f,
+            "'{}' : {}",
+            self.original_source_path().to_string_lossy(),
+            hex::encode(self.version())
+        )
     }
 }
