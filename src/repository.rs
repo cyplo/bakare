@@ -86,6 +86,20 @@ impl<'a> Repository<'a> {
         Ok(hasher.result().as_slice().into())
     }
 
+    pub fn item_by_source_path_and_version(
+        &self,
+        path: &Path,
+        version: &ItemVersion,
+    ) -> Result<Option<RepositoryItem>, BakareError> {
+        if !path.is_absolute() {
+            return Err(BakareError::RepositoryPathNotAbsolute);
+        }
+
+        Ok(self
+            .iter()
+            .find(|i| i.original_source_path() == path && i.version() == version))
+    }
+
     pub fn item_by_source_path(&self, path: &Path) -> Result<Option<RepositoryItem>, BakareError> {
         if !path.is_absolute() {
             return Err(BakareError::RepositoryPathNotAbsolute);

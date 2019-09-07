@@ -71,11 +71,13 @@ fn restore_older_version_of_file() -> Result<(), BakareError> {
         backup_engine.backup()?;
     }
 
-    let reading_repository = Repository::open(repository_path.as_path())?;
-    let item = reading_repository.item_by_source_path(&file_path)?;
-    assert!(item.is_some());
-    let item = item.unwrap();
-    let old_version = item.version();
+    let old_version = {
+        let reading_repository = Repository::open(repository_path.as_path())?;
+        let item = reading_repository.item_by_source_path(&file_path)?;
+        assert!(item.is_some());
+        let item = item.unwrap();
+        item.version().clone()
+    };
 
     {
         let new_contents = "totally new contents";
@@ -88,14 +90,17 @@ fn restore_older_version_of_file() -> Result<(), BakareError> {
     let restore_repository = Repository::open(repository_path.as_path())?;
     let restore_target = tempdir()?;
     let restore_engine = restore::Engine::new(&restore_repository, &restore_target.path())?;
-    restore_engine.restore_as_of_version(&item, old_version)?;
+    let old_item = restore_repository.item_by_source_path_and_version(&file_path, &old_version)?;
+    restore_engine.restore(&old_item.unwrap())?;
 
-    assert_target_file_contents(restore_target.path(), relative_path_text, old_contents)
+    let source_file_full_path = source.file_path(relative_path_text);
+    let restored_file_path = restore_target.path().join(source_file_full_path.strip_prefix("/")?);
+    assert_target_file_contents(&restored_file_path, old_contents)
 }
 
-fn assert_target_file_contents(target: &Path, filename: &str, expected_contents: &str) -> Result<(), BakareError> {
-    let restored_path = target.join(filename);
+fn assert_target_file_contents(restored_path: &Path, expected_contents: &str) -> Result<(), BakareError> {
     let mut actual_contents = String::new();
+    assert!(restored_path.exists(), "Expected '{}' to be there", restored_path.display());
     File::open(restored_path)?.read_to_string(&mut actual_contents)?;
     assert_eq!(expected_contents, actual_contents);
     Ok(())

@@ -38,6 +38,7 @@ impl RepositoryItem {
         if !self.absolute_path.exists() {
             return Err(BakareError::CorruptedRepoNoFile);
         }
+        println!("restoring {} to {}", &self.absolute_path.display(), &target_path.display());
         fs::copy(&self.absolute_path, &target_path)?;
 
         Ok(())

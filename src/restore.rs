@@ -25,14 +25,8 @@ impl<'a> Engine<'a> {
         Ok(())
     }
 
-    fn restore(&self, item: &RepositoryItem) -> Result<(), BakareError> {
-        println!("restoring {}", item);
+    pub fn restore(&self, item: &RepositoryItem) -> Result<(), BakareError> {
         item.save(self.target_path)?;
-        Ok(())
-    }
-
-    pub fn restore_as_of_version(&self, item: &RepositoryItem, version: &ItemVersion) -> Result<(), BakareError> {
-        println!("restoring {}", item);
         Ok(())
     }
 }
