@@ -25,7 +25,7 @@ impl<'a> Engine<'a> {
     }
 
     fn restore(&self, item: &RepositoryItem) -> Result<(), BakareError> {
-        println!("restoring {:#?}", item);
+        println!("restoring {}", item);
         item.save(self.target_path)?;
         Ok(())
     }

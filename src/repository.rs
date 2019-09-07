@@ -34,8 +34,7 @@ impl<'a> Iterator for RepositoryIterator<'a> {
 impl<'a> Repository<'a> {
     pub fn init(path: &Path) -> Result<(), BakareError> {
         let index = Index::new(path);
-        let index_file = File::create(index.index_file_path())?;
-        serde_cbor::to_writer(index_file, &index)?;
+        index.save()?;
         Ok(())
     }
 
@@ -44,10 +43,7 @@ impl<'a> Repository<'a> {
             return Err(BakareError::RepositoryPathNotAbsolute);
         }
 
-        let index_file_path = path.join("index");
-        let index_file = File::open(index_file_path)?;
-        let index: Index = serde_cbor::from_reader(index_file)?;
-
+        let index = Index::load(path)?;
         Ok(Repository { path, index })
     }
 
@@ -82,6 +78,7 @@ impl<'a> Repository<'a> {
                 destination_path.strip_prefix(self.path)?,
                 version,
             ));
+            self.index.save()?;
         }
         Ok(())
     }

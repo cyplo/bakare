@@ -2,7 +2,9 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
+use crate::error::BakareError;
 use crate::repository_item::RepositoryItem;
+use std::fs::File;
 
 #[derive(Clone, Debug, PartialOrd, PartialEq, Ord, Eq, Serialize, Deserialize)]
 pub struct IndexItem {
@@ -25,6 +27,19 @@ impl Index {
             index_path: repository_path.join("index").to_string_lossy().to_string(),
             repository_path: repository_path.to_string_lossy().to_string(),
         }
+    }
+
+    pub fn load(path: &Path) -> Result<Self, BakareError> {
+        let index_file_path = path.join("index");
+        let index_file = File::open(index_file_path)?;
+        let index: Index = serde_cbor::from_reader(index_file)?;
+        Ok(index)
+    }
+
+    pub fn save(&self) -> Result<(), BakareError> {
+        let index_file = File::create(self.index_file_path())?;
+        serde_cbor::to_writer(index_file, &self)?;
+        Ok(())
     }
 
     pub fn index_file_path(&self) -> &Path {

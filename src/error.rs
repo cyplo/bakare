@@ -18,7 +18,7 @@ pub enum BakareError {
     #[fail(display = "corrupted repository - cannot find file")]
     CorruptedRepoNoFile,
     #[fail(display = "index loading error")]
-    IndexLoadingError,
+    IndexLoadingError(Option<serde_cbor::Error>),
 }
 
 impl From<io::Error> for BakareError {
@@ -40,7 +40,7 @@ impl From<StripPrefixError> for BakareError {
 }
 
 impl From<serde_cbor::Error> for BakareError {
-    fn from(_: serde_cbor::Error) -> Self {
-        BakareError::IndexLoadingError
+    fn from(e: serde_cbor::Error) -> Self {
+        BakareError::IndexLoadingError(Some(e))
     }
 }
