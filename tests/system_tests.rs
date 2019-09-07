@@ -163,3 +163,4 @@ fn get_sorted_files_recursively(path: &Path) -> Result<Vec<Box<Path>>, BakareErr
 // TODO: deduplicate data
 // TODO: test that index is stored separately from data
 // TODO: index corruption
+// TODO: forbid source within repository

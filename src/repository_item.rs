@@ -27,7 +27,7 @@ impl RepositoryItem {
             return Err(BakareError::PathToStoreNotAbsolute);
         }
 
-        let target_path = save_to.join(&self.relative_path);
+        let target_path = save_to.join(&self.original_source_path.strip_prefix("/")?);
         if !target_path.is_absolute() {
             return Err(BakareError::PathToStoreNotAbsolute);
         }

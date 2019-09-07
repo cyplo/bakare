@@ -4,8 +4,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::BakareError;
 use crate::repository_item::RepositoryItem;
+use std::fmt;
+use std::fmt::Formatter;
 use std::fs::File;
-use std::ops::Deref;
 
 #[derive(Clone, Debug, PartialOrd, PartialEq, Ord, Eq, Serialize, Deserialize)]
 pub struct ItemVersion(Box<[u8]>);
@@ -33,6 +34,12 @@ impl AsRef<[u8]> for ItemVersion {
 impl From<&[u8]> for ItemVersion {
     fn from(a: &[u8]) -> Self {
         ItemVersion(Box::from(a))
+    }
+}
+
+impl fmt::Display for ItemVersion {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", hex::encode(self))
     }
 }
 

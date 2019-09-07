@@ -57,18 +57,12 @@ impl<'a> Repository<'a> {
         if !source_path.is_absolute() {
             return Err(BakareError::PathToStoreNotAbsolute);
         }
-        let destination_path: &str = &(self.path.to_string_lossy() + source_path.to_string_lossy());
+        let version = Repository::calculate_version(source_path)?;
+        let destination_path = self.path.join(version.to_string());
         let destination_path = Path::new(&destination_path);
-        if source_path == destination_path {
-            return Err(BakareError::SourceSameAsRepository);
-        }
-        if source_path.is_dir() {
-            fs::create_dir(destination_path)?;
-        }
 
         if source_path.is_file() {
             fs::create_dir_all(destination_path.parent().unwrap())?;
-            let version = Repository::calculate_version(source_path)?;
             fs::copy(source_path, destination_path)?;
 
             self.index.remember(RepositoryItem::from(
