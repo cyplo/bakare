@@ -62,15 +62,12 @@ fn forbid_backup_of_paths_within_repository() -> Result<(), BakareError> {
     let repository_path = &tempdir()?.into_path();
     Repository::init(repository_path)?;
     let mut repository = Repository::open(repository_path)?;
-    if let Err(e) = backup::Engine::new(repository_path, &mut repository) {
-        let correct_error = match e {
-            BakareError::SourceSameAsRepository => true,
-            _ => false,
-        };
-        assert!(correct_error);
-    } else {
-        panic!("Expected error");
-    }
+    let error = backup::Engine::new(repository_path, &mut repository).err().unwrap();
+    let correct_error = match error {
+        BakareError::SourceSameAsRepository => true,
+        _ => false,
+    };
+    assert!(correct_error);
     Ok(())
 }
 
