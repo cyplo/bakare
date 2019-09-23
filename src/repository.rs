@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::{fmt, fs, io};
 
 use crate::error::BakareError;
@@ -10,6 +10,7 @@ use sha2::Sha512;
 use std::fmt::Formatter;
 use std::fs::File;
 use std::io::BufReader;
+use walkdir::WalkDir;
 
 /// represents a place where backup is stored an can be restored from.
 /// right now only on-disk directory storage is supported
@@ -20,6 +21,8 @@ pub struct Repository<'a> {
     path: &'a Path,
     index: Index,
 }
+
+const DATA_DIR_NAME: &str = "data";
 
 #[derive(Clone, Debug, PartialOrd, PartialEq, Ord, Eq, Serialize, Deserialize, Hash)]
 pub struct ItemId(Box<[u8]>);
@@ -95,7 +98,8 @@ impl<'a> Repository<'a> {
             return Err(BakareError::PathToStoreNotAbsolute);
         }
         let id = Repository::calculate_id(source_path)?;
-        let destination_path = self.path.join(id.to_string());
+        let destination_path = self.data_dir();
+        let destination_path = destination_path.join(id.to_string());
         let destination_path = Path::new(&destination_path);
 
         if source_path.is_file() {
@@ -124,6 +128,20 @@ impl<'a> Repository<'a> {
             iterator: self.index.newest_items(),
             index: &self.index,
         }
+    }
+
+    pub fn data_weight(&self) -> Result<u64, BakareError> {
+        let total_size = WalkDir::new(self.data_dir())
+            .into_iter()
+            .filter_map(|entry| entry.ok())
+            .filter_map(|entry| entry.metadata().ok())
+            .filter(|metadata| metadata.is_file())
+            .fold(0, |acc, m| acc + m.len());
+        Ok(total_size)
+    }
+
+    fn data_dir(&self) -> PathBuf {
+        self.path().join(DATA_DIR_NAME)
     }
 
     fn calculate_id(source_path: &Path) -> Result<ItemId, BakareError> {

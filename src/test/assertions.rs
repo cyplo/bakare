@@ -97,6 +97,13 @@ pub fn backup_file_with_contents(
     }
 }
 
+pub fn data_weight(repository_path: &Path) -> Result<u64, BakareError> {
+    {
+        let repository = Repository::open(repository_path)?;
+        Ok(repository.data_weight()?)
+    }
+}
+
 fn assert_directory_trees_have_same_contents(left: &Path, right: &Path) -> Result<(), BakareError> {
     let left_files = get_sorted_files_recursively(left)?;
     let right_files = get_sorted_files_recursively(right)?;

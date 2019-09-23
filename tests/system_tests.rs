@@ -81,6 +81,28 @@ fn newer_version_should_be_greater_than_earlier_version() -> Result<(), BakareEr
 }
 
 #[test]
+fn store_duplicated_files_just_once() -> Result<(), BakareError> {
+    let source = TempSource::new()?;
+    let repository_path = &tempdir()?.into_path();
+    Repository::init(repository_path)?;
+    assert_eq!(data_weight(&repository_path)?, 0);
+
+    let contents = "some contents";
+
+    backup_file_with_contents(&source, &repository_path, "1", contents)?;
+    let first_weight = data_weight(&repository_path)?;
+    assert!(first_weight > 0);
+
+    backup_file_with_contents(&source, &repository_path, "2", contents)?;
+    let second_weight = data_weight(&repository_path)?;
+    assert_eq!(first_weight, second_weight);
+
+    assert_restored_has_contents(repository_path, &source.file_path("1"), contents)?;
+    assert_restored_has_contents(repository_path, &source.file_path("2"), contents)?;
+    Ok(())
+}
+
+#[test]
 fn restore_latest_version_by_default() -> Result<(), BakareError> {
     let source = TempSource::new()?;
     let repository_path = &tempdir()?.into_path();
@@ -110,6 +132,5 @@ fn forbid_backup_of_paths_within_repository() -> Result<(), BakareError> {
 }
 
 // TODO: test concurrent writes
-// TODO: deduplicate data
 // TODO: test that index is stored separately from data
 // TODO: index corruption
