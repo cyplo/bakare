@@ -34,7 +34,7 @@ pub fn assert_same_after_restore(source_path: &Path) -> Result<(), BakareError> 
     Ok(())
 }
 
-pub fn assert_restored_has_contents(
+pub fn assert_restored_file_contents(
     repository_path: &Path,
     source_file_full_path: &Path,
     contents: &str,

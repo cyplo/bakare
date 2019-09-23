@@ -32,7 +32,7 @@ fn restore_files_after_reopening_repository() -> Result<(), BakareError> {
     restore_all_from_reloaded_repository(&repository_path, &restore_target)?;
 
     let source_file_full_path = &source.file_path(source_file_relative_path);
-    assert_restored_has_contents(repository_path, source_file_full_path, original_contents)
+    assert_restored_file_contents(repository_path, source_file_full_path, original_contents)
 }
 
 #[test]
@@ -97,8 +97,8 @@ fn store_duplicated_files_just_once() -> Result<(), BakareError> {
     let second_weight = data_weight(&repository_path)?;
     assert_eq!(first_weight, second_weight);
 
-    assert_restored_has_contents(repository_path, &source.file_path("1"), contents)?;
-    assert_restored_has_contents(repository_path, &source.file_path("2"), contents)?;
+    assert_restored_file_contents(repository_path, &source.file_path("1"), contents)?;
+    assert_restored_file_contents(repository_path, &source.file_path("2"), contents)?;
     Ok(())
 }
 
@@ -114,7 +114,7 @@ fn restore_latest_version_by_default() -> Result<(), BakareError> {
     backup_file_with_contents(&source, &repository_path, source_file_relative_path, "newest contents")?;
 
     let source_file_full_path = &source.file_path(source_file_relative_path);
-    assert_restored_has_contents(repository_path, source_file_full_path, "newest contents")
+    assert_restored_file_contents(repository_path, source_file_full_path, "newest contents")
 }
 
 #[test]
