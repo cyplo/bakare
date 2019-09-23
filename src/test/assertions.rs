@@ -41,7 +41,7 @@ pub fn assert_restored_has_contents(
     let restore_repository = Repository::open(repository_path)?;
     let restore_target = tempdir()?;
     let restore_engine = restore::Engine::new(&restore_repository, &restore_target.path())?;
-    let item = restore_repository.newest_item_by_source__path(&source_file_full_path)?;
+    let item = restore_repository.newest_item_by_source_path(&source_file_full_path)?;
     restore_engine.restore(&item.unwrap())?;
     let restored_file_path = restore_target.path().join(source_file_full_path.strip_prefix("/")?);
     assert_target_file_contents(&restored_file_path, contents)
@@ -65,7 +65,7 @@ pub fn assert_restored_from_version_has_contents(
 pub fn item_id(repository_path: &Path, source_file_full_path: &Path) -> Result<ItemId, BakareError> {
     let id = {
         let reading_repository = Repository::open(repository_path)?;
-        let item = reading_repository.newest_item_by_source__path(&source_file_full_path)?;
+        let item = reading_repository.newest_item_by_source_path(&source_file_full_path)?;
         assert!(item.is_some());
         let item = item.unwrap();
         item.id().clone()

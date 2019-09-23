@@ -1,14 +1,13 @@
+use std::collections::hash_map::Iter;
+use std::collections::HashMap;
 use std::fs::File;
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
 use crate::error::BakareError;
-use crate::error::BakareError::RepositoryPathNotAbsolute;
 use crate::repository::{ItemId, Version};
 use crate::repository_item::RepositoryItem;
-use std::collections::hash_map::Iter;
-use std::collections::HashMap;
 
 #[derive(Clone, Debug, PartialOrd, PartialEq, Ord, Eq, Serialize, Deserialize)]
 pub struct IndexItem {
@@ -48,11 +47,11 @@ impl IndexItem {
         }
     }
 
-    fn next_version(&self, id: ItemId) -> IndexItem {
+    fn next_version(&self, id: ItemId, relative_path: String) -> IndexItem {
         IndexItem {
-            relative_path: self.relative_path.clone(),
             original_source_path: self.original_source_path.clone(),
             version: self.version.next(),
+            relative_path,
             id,
         }
     }
@@ -85,20 +84,12 @@ impl Index {
         Path::new(&self.index_path)
     }
 
-    pub fn len(&self) -> usize {
-        self.items_by_file_id.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.items_by_file_id.is_empty()
-    }
-
-    pub fn remember(&mut self, original_source_path: &Path, absolute_path: &Path, relative_path: &Path, id: ItemId) {
+    pub fn remember(&mut self, original_source_path: &Path, relative_path: &Path, id: ItemId) {
         let item = if let Some(old) = self
             .newest_items_by_source_path
             .get(&original_source_path.to_string_lossy().to_string())
         {
-            old.next_version(id)
+            old.next_version(id, relative_path.to_string_lossy().to_string())
         } else {
             IndexItem::from(
                 original_source_path.to_string_lossy().to_string(),
@@ -108,6 +99,7 @@ impl Index {
             )
         };
 
+        println!("remember {:?}", item);
         self.items_by_file_id.insert(item.id.clone(), item.clone());
         self.newest_items_by_source_path
             .insert(original_source_path.to_string_lossy().to_string(), item.clone());
@@ -140,7 +132,7 @@ impl Index {
     }
 
     pub fn item_by_id(&self, id: &ItemId) -> Result<Option<IndexItem>, BakareError> {
-        Ok(self.items_by_file_id.get(id).map(|i| i.clone()))
+        Ok(self.items_by_file_id.get(id).cloned())
     }
 
     pub fn newest_items(&self) -> IndexItemIterator {

@@ -2,7 +2,7 @@ use std::path::Path;
 use std::{fmt, fs, io};
 
 use crate::error::BakareError;
-use crate::index::{Index, IndexItem, IndexItemIterator};
+use crate::index::{Index, IndexItemIterator};
 use crate::repository_item::RepositoryItem;
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
@@ -10,7 +10,6 @@ use sha2::Sha512;
 use std::fmt::Formatter;
 use std::fs::File;
 use std::io::BufReader;
-use std::ops::Add;
 
 /// represents a place where backup is stored an can be restored from.
 /// right now only on-disk directory storage is supported
@@ -102,15 +101,14 @@ impl<'a> Repository<'a> {
         if source_path.is_file() {
             fs::create_dir_all(destination_path.parent().unwrap())?;
             fs::copy(source_path, destination_path)?;
-
-            self.index
-                .remember(source_path, destination_path, destination_path.strip_prefix(self.path)?, id);
+            let relative_path = destination_path.strip_prefix(self.path)?;
+            self.index.remember(source_path, relative_path, id);
             self.index.save()?;
         }
         Ok(())
     }
 
-    pub fn newest_item_by_source__path(&self, path: &Path) -> Result<Option<RepositoryItem>, BakareError> {
+    pub fn newest_item_by_source_path(&self, path: &Path) -> Result<Option<RepositoryItem>, BakareError> {
         Ok(self
             .index
             .newest_item_by_source_path(path)?

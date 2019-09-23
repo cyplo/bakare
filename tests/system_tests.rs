@@ -32,7 +32,7 @@ fn restore_files_after_reopening_repository() -> Result<(), BakareError> {
     restore_all_from_reloaded_repository(&repository_path, &restore_target)?;
 
     let source_file_full_path = &source.file_path(source_file_relative_path);
-    assert_restored_has_contents(repository_path, source_file_full_path, "newest contents")
+    assert_restored_has_contents(repository_path, source_file_full_path, original_contents)
 }
 
 #[test]
