@@ -47,12 +47,37 @@ fn restore_older_version_of_file() -> Result<(), BakareError> {
 
     backup_file_with_contents(&source, &repository_path, source_file_relative_path, old_contents)?;
 
-    let old_version = item_id(&repository_path, &source_file_full_path)?;
+    let old_item = newest_item(&repository_path, &source_file_full_path)?;
+    let old_id = old_item.id();
 
     let new_contents = "totally new contents";
     backup_file_with_contents(&source, &repository_path, source_file_relative_path, new_contents)?;
 
-    assert_restored_from_version_has_contents(&repository_path, &source_file_full_path, old_contents, &old_version)
+    assert_restored_from_version_has_contents(&repository_path, &source_file_full_path, old_contents, &old_id)
+}
+
+#[test]
+fn newer_version_should_be_greater_than_earlier_version() -> Result<(), BakareError> {
+    let source = TempSource::new()?;
+    let repository_path = tempdir()?.into_path();
+    Repository::init(repository_path.as_path())?;
+
+    let source_file_relative_path = "some path";
+    let source_file_full_path = source.file_path(source_file_relative_path);
+
+    backup_file_with_contents(&source, &repository_path, source_file_relative_path, "old")?;
+
+    let old_item = newest_item(&repository_path, &source_file_full_path)?;
+    let old_version = old_item.version();
+
+    backup_file_with_contents(&source, &repository_path, source_file_relative_path, "new")?;
+
+    let new_item = newest_item(&repository_path, &source_file_full_path)?;
+    let new_version = new_item.version();
+
+    assert!(new_version > old_version);
+
+    Ok(())
 }
 
 #[test]
@@ -84,8 +109,8 @@ fn forbid_backup_of_paths_within_repository() -> Result<(), BakareError> {
     Ok(())
 }
 
+// TODO: test concurrent writes
 // TODO: deduplicate data
 // TODO: test that index is stored separately from data
 // TODO: index corruption
 // TODO: newer version should be greater than older version
-// TODO: split version into file id and version

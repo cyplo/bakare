@@ -7,6 +7,7 @@ use walkdir::WalkDir;
 
 use crate::error::BakareError;
 use crate::repository::{ItemId, Repository};
+use crate::repository_item::RepositoryItem;
 use crate::source::TempSource;
 use crate::{backup, restore};
 
@@ -62,15 +63,14 @@ pub fn assert_restored_from_version_has_contents(
     assert_target_file_contents(&restored_file_path, old_contents)
 }
 
-pub fn item_id(repository_path: &Path, source_file_full_path: &Path) -> Result<ItemId, BakareError> {
-    let id = {
+pub fn newest_item(repository_path: &Path, source_file_full_path: &Path) -> Result<RepositoryItem, BakareError> {
+    let item = {
         let reading_repository = Repository::open(repository_path)?;
         let item = reading_repository.newest_item_by_source_path(&source_file_full_path)?;
         assert!(item.is_some());
-        let item = item.unwrap();
-        item.id().clone()
+        item.unwrap()
     };
-    Ok(id)
+    Ok(item)
 }
 
 pub fn restore_all_from_reloaded_repository(repository_path: &Path, restore_target: &Path) -> Result<(), BakareError> {
