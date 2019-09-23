@@ -18,7 +18,7 @@ impl<'a> Engine<'a> {
     }
 
     pub fn restore_all(&self) -> Result<(), BakareError> {
-        for item in self.repository.iter() {
+        for item in self.repository.newest_items() {
             self.restore(&item)?;
         }
         Ok(())

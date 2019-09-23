@@ -20,9 +20,9 @@ fn restore_multiple_files() -> Result<(), BakareError> {
 #[test]
 fn restore_files_after_reopening_repository() -> Result<(), BakareError> {
     let source = TempSource::new()?;
-    let repository_path = tempdir()?.into_path();
+    let repository_path = &tempdir()?.into_path();
     let restore_target = tempdir()?.into_path();
-    Repository::init(repository_path.as_path())?;
+    Repository::init(repository_path)?;
 
     let source_file_relative_path = "some file path";
     let original_contents = "some old contents";
@@ -31,10 +31,8 @@ fn restore_files_after_reopening_repository() -> Result<(), BakareError> {
 
     restore_all_from_reloaded_repository(&repository_path, &restore_target)?;
 
-    let contents = read_restored_file_contents(source, &restore_target, source_file_relative_path)?;
-
-    assert_eq!(contents, original_contents);
-    Ok(())
+    let source_file_full_path = &source.file_path(source_file_relative_path);
+    assert_restored_has_contents(repository_path, source_file_full_path, "newest contents")
 }
 
 #[test]
@@ -49,12 +47,27 @@ fn restore_older_version_of_file() -> Result<(), BakareError> {
 
     backup_file_with_contents(&source, &repository_path, source_file_relative_path, old_contents)?;
 
-    let old_version = item_version(&repository_path, &source_file_full_path)?;
+    let old_version = item_id(&repository_path, &source_file_full_path)?;
 
     let new_contents = "totally new contents";
     backup_file_with_contents(&source, &repository_path, source_file_relative_path, new_contents)?;
 
     assert_restored_from_version_has_contents(&repository_path, &source_file_full_path, old_contents, &old_version)
+}
+
+#[test]
+fn restore_latest_version_by_default() -> Result<(), BakareError> {
+    let source = TempSource::new()?;
+    let repository_path = &tempdir()?.into_path();
+    Repository::init(repository_path)?;
+
+    let source_file_relative_path = "some path";
+    backup_file_with_contents(&source, &repository_path, source_file_relative_path, "old contents")?;
+    backup_file_with_contents(&source, &repository_path, source_file_relative_path, "newer contents")?;
+    backup_file_with_contents(&source, &repository_path, source_file_relative_path, "newest contents")?;
+
+    let source_file_full_path = &source.file_path(source_file_relative_path);
+    assert_restored_has_contents(repository_path, source_file_full_path, "newest contents")
 }
 
 #[test]
@@ -71,7 +84,8 @@ fn forbid_backup_of_paths_within_repository() -> Result<(), BakareError> {
     Ok(())
 }
 
-// TODO: restore latest version by default
 // TODO: deduplicate data
 // TODO: test that index is stored separately from data
 // TODO: index corruption
+// TODO: newer version should be greater than older version
+// TODO: split version into file id and version

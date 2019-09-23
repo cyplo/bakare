@@ -1,4 +1,3 @@
-use std::fs;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
@@ -7,17 +6,9 @@ use tempfile::tempdir;
 use walkdir::WalkDir;
 
 use crate::error::BakareError;
-use crate::repository::{ItemVersion, Repository};
+use crate::repository::{ItemId, Repository};
 use crate::source::TempSource;
 use crate::{backup, restore};
-
-pub fn assert_target_file_contents(restored_path: &Path, expected_contents: &str) -> Result<(), BakareError> {
-    let mut actual_contents = String::new();
-    assert!(restored_path.exists(), "Expected '{}' to be there", restored_path.display());
-    File::open(restored_path)?.read_to_string(&mut actual_contents)?;
-    assert_eq!(expected_contents, actual_contents);
-    Ok(())
-}
 
 pub fn assert_same_after_restore(source_path: &Path) -> Result<(), BakareError> {
     let repository_path = tempdir()?.into_path();
@@ -42,41 +33,44 @@ pub fn assert_same_after_restore(source_path: &Path) -> Result<(), BakareError> 
     Ok(())
 }
 
-pub fn assert_restored_from_version_has_contents(
+pub fn assert_restored_has_contents(
     repository_path: &Path,
     source_file_full_path: &Path,
-    old_contents: &str,
-    old_version: &ItemVersion,
+    contents: &str,
 ) -> Result<(), BakareError> {
     let restore_repository = Repository::open(repository_path)?;
     let restore_target = tempdir()?;
     let restore_engine = restore::Engine::new(&restore_repository, &restore_target.path())?;
-    let old_item = restore_repository.item_by_source_path_and_version(&source_file_full_path, &old_version)?;
+    let item = restore_repository.newest_item_by_source__path(&source_file_full_path)?;
+    restore_engine.restore(&item.unwrap())?;
+    let restored_file_path = restore_target.path().join(source_file_full_path.strip_prefix("/")?);
+    assert_target_file_contents(&restored_file_path, contents)
+}
+
+pub fn assert_restored_from_version_has_contents(
+    repository_path: &Path,
+    source_file_full_path: &Path,
+    old_contents: &str,
+    old_id: &ItemId,
+) -> Result<(), BakareError> {
+    let restore_repository = Repository::open(repository_path)?;
+    let restore_target = tempdir()?;
+    let restore_engine = restore::Engine::new(&restore_repository, &restore_target.path())?;
+    let old_item = restore_repository.item_by_id(&old_id)?;
     restore_engine.restore(&old_item.unwrap())?;
     let restored_file_path = restore_target.path().join(source_file_full_path.strip_prefix("/")?);
     assert_target_file_contents(&restored_file_path, old_contents)
 }
 
-pub fn item_version(repository_path: &Path, source_file_full_path: &Path) -> Result<ItemVersion, BakareError> {
-    let old_version = {
+pub fn item_id(repository_path: &Path, source_file_full_path: &Path) -> Result<ItemId, BakareError> {
+    let id = {
         let reading_repository = Repository::open(repository_path)?;
-        let item = reading_repository.item_by_source_path(&source_file_full_path)?;
+        let item = reading_repository.newest_item_by_source__path(&source_file_full_path)?;
         assert!(item.is_some());
         let item = item.unwrap();
-        item.version().clone()
+        item.id().clone()
     };
-    Ok(old_version)
-}
-
-pub fn read_restored_file_contents(
-    source: TempSource,
-    restore_target: &Path,
-    source_file_relative_path: &str,
-) -> Result<String, BakareError> {
-    let source_file_full_path = source.file_path(source_file_relative_path);
-    let restored_file_path = restore_target.join(source_file_full_path.strip_prefix("/")?);
-    let contents = fs::read_to_string(restored_file_path)?;
-    Ok(contents)
+    Ok(id)
 }
 
 pub fn restore_all_from_reloaded_repository(repository_path: &Path, restore_target: &Path) -> Result<(), BakareError> {
@@ -137,4 +131,12 @@ fn get_sorted_files_recursively(path: &Path) -> Result<Vec<Box<Path>>, BakareErr
     }
 
     Ok(result)
+}
+
+fn assert_target_file_contents(restored_path: &Path, expected_contents: &str) -> Result<(), BakareError> {
+    let mut actual_contents = String::new();
+    assert!(restored_path.exists(), "Expected '{}' to be there", restored_path.display());
+    File::open(restored_path)?.read_to_string(&mut actual_contents)?;
+    assert_eq!(expected_contents, actual_contents);
+    Ok(())
 }
