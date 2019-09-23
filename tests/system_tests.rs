@@ -113,4 +113,3 @@ fn forbid_backup_of_paths_within_repository() -> Result<(), BakareError> {
 // TODO: deduplicate data
 // TODO: test that index is stored separately from data
 // TODO: index corruption
-// TODO: newer version should be greater than older version
