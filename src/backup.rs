@@ -20,20 +20,12 @@ impl<'a> Engine<'a> {
 
     pub fn backup(&mut self) -> Result<(), BakareError> {
         let walker = WalkDir::new(self.source_path);
-        let save_every = 100;
-        let mut save_counter = 0;
         for maybe_entry in walker {
             let entry = maybe_entry?;
             if entry.path() != self.source_path {
                 self.repository.store(entry.path())?;
             }
-            save_counter += 1;
-            if save_counter >= save_every {
-                save_counter = 0;
-                self.repository.save_index()?;
-            }
         }
-        self.repository.save_index()?;
         self.repository.merge_indexes()?;
         Ok(())
     }

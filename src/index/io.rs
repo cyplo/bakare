@@ -17,7 +17,8 @@ impl Index {
     pub fn load(path: &Path) -> Result<Self, BakareError> {
         let lock_id = Uuid::new_v4();
         lock::acquire_lock(lock_id, path)?;
-        let index = Index::load_reusing_lock(&Index::index_file_path_for_repository_path(path), lock_id)?;
+        let mut index = Index::load_reusing_lock(&Index::index_file_path_for_repository_path(path), lock_id)?;
+        index.absorb_other_no_lock()?;
         lock::release_lock(path, lock_id)?;
         Ok(index)
     }
@@ -38,7 +39,12 @@ impl Index {
 
     pub fn absorb_other(&mut self) -> Result<(), BakareError> {
         lock::acquire_lock(self.lock_id, &self.index_directory())?;
+        self.absorb_other_no_lock()?;
+        lock::release_lock(&self.index_directory(), self.lock_id)?;
+        Ok(())
+    }
 
+    fn absorb_other_no_lock(&mut self) -> Result<(), BakareError> {
         let sole_lock = lock::sole_lock(self.lock_id, &self.index_directory())?;
         if sole_lock {
             self.write_index_to_file(self.side_index_file_path())?;
@@ -47,9 +53,6 @@ impl Index {
             for index in indexes {
                 self.load_and_merge(&index?)?;
             }
-
-            self.write_index_to_file(self.index_file_path())?;
-            lock::release_lock(&self.index_directory(), self.lock_id)?;
         }
 
         Ok(())

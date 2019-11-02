@@ -98,9 +98,10 @@ impl<'a> Repository<'a> {
     }
 
     pub fn merge_indexes(&mut self) -> Result<(), BakareError> {
-        self.index.absorb_other()
+        self.index.absorb_other()?;
+        self.index.save()
     }
-    
+
     pub fn store(&mut self, source_path: &Path) -> Result<(), BakareError> {
         if !source_path.is_absolute() {
             return Err(BakareError::PathToStoreNotAbsolute);
