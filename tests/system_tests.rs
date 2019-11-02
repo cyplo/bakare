@@ -134,6 +134,7 @@ fn forbid_backup_of_paths_within_repository() -> Result<(), BakareError> {
 }
 
 #[test]
+// TODO: has a deadlock - hangs sometimes
 fn handle_concurrent_backups() -> Result<(), BakareError> {
     let repository_path = &tempdir().unwrap().into_path();
     Repository::init(repository_path)?;
