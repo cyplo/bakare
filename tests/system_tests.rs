@@ -133,12 +133,13 @@ fn forbid_backup_of_paths_within_repository() -> Result<(), BakareError> {
     Ok(())
 }
 
+#[test]
 fn handle_concurrent_backups() -> Result<(), BakareError> {
     let repository_path = &tempdir()?.into_path();
     Repository::init(repository_path)?;
 
-    let parallel_backups_number = 8;
-    (1..parallel_backups_number)
+    let parallel_backups_number = 4;
+    (0..parallel_backups_number)
         .collect::<Vec<_>>()
         .par_iter()
         .map(|task_number| {
@@ -160,7 +161,7 @@ fn handle_concurrent_backups() -> Result<(), BakareError> {
     {
         let all_restored_files = get_sorted_files_recursively(&restore_target)?;
         assert_eq!(all_restored_files.len(), parallel_backups_number);
-        for i in 1..parallel_backups_number {
+        for i in 0..parallel_backups_number {
             let path = restore_target.join(i.to_string());
             let contents = fs::read_to_string(path)?;
             assert_eq!(i.to_string(), contents.to_owned());
