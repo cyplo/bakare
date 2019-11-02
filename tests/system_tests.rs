@@ -139,7 +139,7 @@ fn handle_concurrent_backups() -> Result<(), BakareError> {
     let repository_path = &tempdir().unwrap().into_path();
     Repository::init(repository_path)?;
 
-    let parallel_backups_number = 8;
+    let parallel_backups_number = 32;
     (0..parallel_backups_number)
         .collect::<Vec<_>>()
         .par_iter()

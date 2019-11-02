@@ -93,6 +93,10 @@ impl<'a> Repository<'a> {
         &self.path
     }
 
+    pub fn save_index(&mut self) -> Result<(), BakareError> {
+        self.index.save()
+    }
+
     pub fn store(&mut self, source_path: &Path) -> Result<(), BakareError> {
         if !source_path.is_absolute() {
             return Err(BakareError::PathToStoreNotAbsolute);
@@ -108,7 +112,6 @@ impl<'a> Repository<'a> {
             fs::copy(source_path, destination_path).map_err(|e| (e, destination_path.to_string_lossy().to_string()))?;
             let relative_path = destination_path.strip_prefix(self.path)?;
             self.index.remember(source_path, relative_path, id);
-            self.index.save()?;
         }
         Ok(())
     }
