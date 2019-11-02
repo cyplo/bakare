@@ -75,7 +75,7 @@ impl fmt::Display for ItemId {
 
 impl<'a> Repository<'a> {
     pub fn init(path: &Path) -> Result<(), BakareError> {
-        let index = Index::new(path);
+        let mut index = Index::new(path);
         index.save()?;
         Ok(())
     }

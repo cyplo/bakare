@@ -7,6 +7,8 @@ use std::path::StripPrefixError;
 pub enum BakareError {
     #[fail(display = "io error")]
     IOError(Option<io::Error>),
+    #[fail(display = "io error: globbing error")]
+    IOGlobbingError(Option<glob::PatternError>),
     #[fail(display = "backup source same as repository")]
     SourceSameAsRepository,
     #[fail(display = "repository path is not absolute")]
@@ -42,5 +44,11 @@ impl From<StripPrefixError> for BakareError {
 impl From<serde_cbor::Error> for BakareError {
     fn from(e: serde_cbor::Error) -> Self {
         BakareError::IndexLoadingError(Some(e))
+    }
+}
+
+impl From<glob::PatternError> for BakareError {
+    fn from(e: glob::PatternError) -> Self {
+        BakareError::IOGlobbingError(Some(e))
     }
 }
