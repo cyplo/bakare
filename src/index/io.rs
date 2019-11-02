@@ -1,8 +1,10 @@
 use std::collections::HashMap;
+use std::fs;
 use std::fs::File;
 use std::path::{Path, PathBuf};
-use std::{fs, io};
 
+use atomicwrites::AtomicFile;
+use atomicwrites::*;
 use uuid::Uuid;
 
 use glob::glob;
@@ -12,9 +14,6 @@ use crate::error::BakareError;
 use crate::index::item::IndexItem;
 use crate::index::{lock, Index};
 use crate::repository::ItemId;
-use atomicwrites::AtomicFile;
-use atomicwrites::OverwriteBehavior::DisallowOverwrite;
-use atomicwrites::*;
 
 impl Index {
     pub fn load(path: &Path) -> Result<Self, BakareError> {

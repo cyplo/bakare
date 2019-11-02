@@ -1,16 +1,15 @@
-use std::fs::File;
+use std::io::Write;
 use std::path::Path;
 use std::time::Duration;
 use std::{fs, thread};
 
+use atomicwrites::AtomicFile;
+use atomicwrites::OverwriteBehavior::DisallowOverwrite;
 use uuid::Uuid;
 
 use glob::{glob, Paths};
 
 use crate::error::BakareError;
-use atomicwrites::AtomicFile;
-use atomicwrites::OverwriteBehavior::{AllowOverwrite, DisallowOverwrite};
-use std::io::Write;
 
 pub fn release_lock(path: &Path, lock_id: Uuid) -> Result<(), BakareError> {
     let lock_file_path = lock_file_path(path, lock_id);

@@ -1,16 +1,17 @@
+use std::fmt::Formatter;
+use std::fs::File;
+use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use std::{fmt, fs, io};
+
+use serde::{Deserialize, Serialize};
+use sha2::Digest;
+use sha2::Sha512;
+use walkdir::WalkDir;
 
 use crate::error::BakareError;
 use crate::index::{Index, IndexItemIterator};
 use crate::repository_item::RepositoryItem;
-use serde::{Deserialize, Serialize};
-use sha2::Digest;
-use sha2::Sha512;
-use std::fmt::Formatter;
-use std::fs::File;
-use std::io::BufReader;
-use walkdir::WalkDir;
 
 /// represents a place where backup is stored an can be restored from.
 /// right now only on-disk directory storage is supported
