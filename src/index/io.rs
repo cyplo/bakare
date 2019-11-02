@@ -2,7 +2,10 @@ use crate::error::BakareError;
 use crate::index::item::IndexItem;
 use crate::index::{lock, Index};
 use crate::repository::ItemId;
+use glob::glob;
+use glob::Paths;
 use std::collections::HashMap;
+use std::fs;
 use std::fs::File;
 use std::path::{Path, PathBuf};
 use uuid::Uuid;
@@ -10,7 +13,8 @@ use uuid::Uuid;
 impl Index {
     pub fn load(path: &Path) -> Result<Self, BakareError> {
         let lock_id = Uuid::new_v4();
-        let index = Index::load_reusing_lock(path, lock_id)?;
+        lock::acquire_lock(lock_id, path)?;
+        let index = Index::load_reusing_lock(&Index::index_file_path_for_repository_path(path), lock_id)?;
         lock::release_lock(path, lock_id)?;
         Ok(index)
     }
@@ -18,13 +22,40 @@ impl Index {
     pub fn save(&mut self) -> Result<(), BakareError> {
         lock::acquire_lock(self.lock_id, &self.index_directory())?;
 
-        self.reload_and_merge()?;
-
-        let index_file =
-            File::create(self.index_file_path()).map_err(|e| (e, self.index_file_path().to_string_lossy().to_string()))?;
-        serde_cbor::to_writer(index_file, &self)?;
+        let sole_lock = lock::sole_lock(self.lock_id, &self.index_directory())?;
+        if sole_lock {
+            self.write_index_to_file(self.index_file_path())?;
+        } else {
+            self.write_index_to_file(self.side_index_file_path())?;
+        }
 
         lock::release_lock(&self.index_directory(), self.lock_id)?;
+        Ok(())
+    }
+
+    pub fn absorb_other(&mut self) -> Result<(), BakareError> {
+        lock::acquire_lock(self.lock_id, &self.index_directory())?;
+
+        let sole_lock = lock::sole_lock(self.lock_id, &self.index_directory())?;
+        if sole_lock {
+            self.write_index_to_file(self.side_index_file_path())?;
+
+            let indexes = self.all_side_indexes()?;
+            for index in indexes {
+                self.load_and_merge(&index?)?;
+            }
+
+            self.write_index_to_file(self.index_file_path())?;
+        }
+
+        lock::release_lock(&self.index_directory(), self.lock_id)?;
+        Ok(())
+    }
+
+    fn write_index_to_file(&mut self, path: PathBuf) -> Result<(), BakareError> {
+        fs::create_dir_all(path.clone().parent().unwrap()).map_err(|e| (e, path.to_string_lossy().to_string()))?;
+        let index_file = File::create(path.clone()).map_err(|e| (e, path.to_string_lossy().to_string()))?;
+        serde_cbor::to_writer(index_file, &self)?;
         Ok(())
     }
 
@@ -32,23 +63,34 @@ impl Index {
         Path::new(&self.index_path).to_path_buf()
     }
 
-    fn load_reusing_lock(path: &Path, lock_id: Uuid) -> Result<Self, BakareError> {
-        lock::acquire_lock(lock_id, path)?;
-        let index_file_path = Index::index_file_path_for_repository_path(path);
-        let index_file = File::open(index_file_path.clone()).map_err(|e| (e, index_file_path.to_string_lossy().to_string()))?;
+    fn side_index_file_path(&self) -> PathBuf {
+        self.side_indexes_path().join(format!("{}", self.lock_id))
+    }
+
+    fn side_indexes_path(&self) -> PathBuf {
+        Path::new(&self.repository_path).join("side_indexes")
+    }
+
+    fn all_side_indexes(&self) -> Result<Paths, BakareError> {
+        let glob_pattern = format!("{}/*", self.side_indexes_path().to_string_lossy());
+        Ok(glob(&glob_pattern)?)
+    }
+
+    fn load_reusing_lock(index_file_path: &Path, lock_id: Uuid) -> Result<Self, BakareError> {
+        let index_file = File::open(&index_file_path).map_err(|e| (e, index_file_path))?;
         let mut index: Index = serde_cbor::from_reader(index_file)?;
         index.lock_id = lock_id;
+        index.index_path = index_file_path.to_string_lossy().to_string();
         Ok(index)
     }
 
-    fn reload_and_merge(&mut self) -> Result<(), BakareError> {
-        let repository_path = Path::new(&self.repository_path);
-        let old_index_path = Index::index_file_path_for_repository_path(repository_path);
-        if old_index_path.exists() {
-            let old_index = Index::load_reusing_lock(repository_path, self.lock_id)?;
+    fn load_and_merge(&mut self, other_index_path: &PathBuf) -> Result<(), BakareError> {
+        let old_index = Index::load_reusing_lock(other_index_path, self.lock_id)?;
+        {
             self.merge_items_by_file_id(old_index.items_by_file_id);
             self.merge_newest_items(old_index.newest_items_by_source_path);
         }
+        fs::remove_file(&other_index_path).map_err(|e| (e, &self.index_path))?;
         Ok(())
     }
 

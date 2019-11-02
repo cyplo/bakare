@@ -33,7 +33,7 @@ impl<'a> Engine<'a> {
                 self.repository.save_index()?;
             }
         }
-        self.repository.save_index()?;
+        self.repository.merge_indexes()?;
         Ok(())
     }
 }

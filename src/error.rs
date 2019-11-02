@@ -1,7 +1,7 @@
 use std::io;
 
 use failure::Fail;
-use std::path::StripPrefixError;
+use std::path::{Path, PathBuf, StripPrefixError};
 
 #[derive(Debug, Fail)]
 pub enum BakareError {
@@ -23,9 +23,12 @@ pub enum BakareError {
     IndexLoadingError(Option<serde_cbor::Error>),
 }
 
-impl From<(io::Error, String)> for BakareError {
-    fn from((e, p): (io::Error, String)) -> Self {
-        BakareError::IOError(Some(e), p)
+impl<T> From<(io::Error, T)> for BakareError
+where
+    T: AsRef<Path>,
+{
+    fn from((e, p): (io::Error, T)) -> Self {
+        BakareError::IOError(Some(e), p.as_ref().to_string_lossy().to_string())
     }
 }
 
@@ -51,5 +54,11 @@ impl From<serde_cbor::Error> for BakareError {
 impl From<glob::PatternError> for BakareError {
     fn from(e: glob::PatternError) -> Self {
         BakareError::IOGlobbingError(Some(e))
+    }
+}
+
+impl From<glob::GlobError> for BakareError {
+    fn from(e: glob::GlobError) -> Self {
+        BakareError::IOGlobbingError(None)
     }
 }
