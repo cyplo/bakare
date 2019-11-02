@@ -1,15 +1,17 @@
+use std::collections::HashMap;
+use std::fs;
+use std::fs::File;
+use std::path::{Path, PathBuf};
+
+use uuid::Uuid;
+
+use glob::glob;
+use glob::Paths;
+
 use crate::error::BakareError;
 use crate::index::item::IndexItem;
 use crate::index::{lock, Index};
 use crate::repository::ItemId;
-use glob::glob;
-use glob::Paths;
-use std::collections::HashMap;
-use std::fs::File;
-use std::path::{Path, PathBuf};
-use std::time::Duration;
-use std::{fs, thread};
-use uuid::Uuid;
 
 impl Index {
     pub fn load(path: &Path) -> Result<Self, BakareError> {

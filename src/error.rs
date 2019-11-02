@@ -1,7 +1,7 @@
 use std::io;
+use std::path::{Path, StripPrefixError};
 
 use failure::Fail;
-use std::path::{Path, PathBuf, StripPrefixError};
 
 #[derive(Debug, Fail)]
 pub enum BakareError {
@@ -58,7 +58,7 @@ impl From<glob::PatternError> for BakareError {
 }
 
 impl From<glob::GlobError> for BakareError {
-    fn from(e: glob::GlobError) -> Self {
+    fn from(_: glob::GlobError) -> Self {
         BakareError::IOGlobbingError(None)
     }
 }
