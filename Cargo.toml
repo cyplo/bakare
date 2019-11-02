@@ -6,6 +6,7 @@ edition = "2018"
 license = "AGPL-3.0"
 
 [dependencies]
+atomicwrites = "0.2"
 failure = "0.1"
 glob = "0.3"
 hex = "0.3"

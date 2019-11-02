@@ -138,7 +138,7 @@ fn handle_concurrent_backups() -> Result<(), BakareError> {
     let repository_path = &tempdir().unwrap().into_path();
     Repository::init(repository_path)?;
 
-    let parallel_backups_number = 32;
+    let parallel_backups_number = 1;
     (0..parallel_backups_number)
         .collect::<Vec<_>>()
         .par_iter()
@@ -157,6 +157,8 @@ fn handle_concurrent_backups() -> Result<(), BakareError> {
     let restore_target = tempdir().unwrap().into_path();
     {
         let restore_repository = Repository::open(repository_path.as_path())?;
+        let side_indexes = get_sorted_files_recursively(&repository_path.join("side_indexes"))?;
+        assert_eq!(side_indexes.iter().count(), 0);
         let restore_engine = restore::Engine::new(&restore_repository, &restore_target)?;
         restore_engine.restore_all()?;
     }

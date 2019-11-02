@@ -8,6 +8,9 @@ use uuid::Uuid;
 use glob::{glob, Paths};
 
 use crate::error::BakareError;
+use atomicwrites::AtomicFile;
+use atomicwrites::OverwriteBehavior::{AllowOverwrite, DisallowOverwrite};
+use std::io::Write;
 
 pub fn release_lock(path: &Path, lock_id: Uuid) -> Result<(), BakareError> {
     let lock_file_path = lock_file_path(path, lock_id);
@@ -21,9 +24,8 @@ fn delete_lock_file(lock_file_path: String) -> Result<(), BakareError> {
 }
 
 pub fn acquire_lock(lock_id: Uuid, index_directory: &Path) -> Result<(), BakareError> {
-    let lock_file_path = lock_file_path(index_directory, lock_id);
     wait_to_have_sole_lock(lock_id, index_directory)?;
-    create_lock_file(lock_file_path.clone())?;
+    create_lock_file(lock_id, index_directory)?;
     Ok(())
 }
 
@@ -48,11 +50,13 @@ fn all_locks(index_directory: &Path) -> Result<Paths, BakareError> {
     Ok(glob(&locks_glob(index_directory))?)
 }
 
-fn create_lock_file<T>(lock_file_path: T) -> Result<(), BakareError>
-where
-    T: AsRef<Path>,
-{
-    File::create(&lock_file_path).map_err(|e| (e, &lock_file_path))?;
+fn create_lock_file(lock_id: Uuid, index_directory: &Path) -> Result<(), BakareError> {
+    let lock_file_path = lock_file_path(index_directory, lock_id);
+    let file = AtomicFile::new(&lock_file_path, DisallowOverwrite);
+    file.write(|f| f.write_all(lock_id.as_bytes())).map_err(|e| match e {
+        atomicwrites::Error::Internal(e) => BakareError::from((e, &lock_file_path)),
+        atomicwrites::Error::User(e) => BakareError::from((e, &lock_file_path)),
+    })?;
     Ok(())
 }
 

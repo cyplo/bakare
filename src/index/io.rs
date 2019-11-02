@@ -1,7 +1,7 @@
 use std::collections::HashMap;
-use std::fs;
 use std::fs::File;
 use std::path::{Path, PathBuf};
+use std::{fs, io};
 
 use uuid::Uuid;
 
@@ -12,6 +12,9 @@ use crate::error::BakareError;
 use crate::index::item::IndexItem;
 use crate::index::{lock, Index};
 use crate::repository::ItemId;
+use atomicwrites::AtomicFile;
+use atomicwrites::OverwriteBehavior::DisallowOverwrite;
+use atomicwrites::*;
 
 impl Index {
     pub fn load(path: &Path) -> Result<Self, BakareError> {
@@ -63,8 +66,13 @@ impl Index {
         T: AsRef<Path>,
     {
         fs::create_dir_all(path.as_ref().parent().unwrap()).map_err(|e| (e, &path))?;
-        let index_file = File::create(&path).map_err(|e| (e, &path))?;
-        serde_cbor::to_writer(index_file, &self)?;
+
+        let file = AtomicFile::new(&path, AllowOverwrite);
+        file.write(|f| serde_cbor::to_writer(f, &self)).map_err(|e| match e {
+            atomicwrites::Error::Internal(e) => BakareError::from((e, &path)),
+            atomicwrites::Error::User(e) => BakareError::from(e),
+        })?;
+
         Ok(())
     }
 
