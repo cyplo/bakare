@@ -4,7 +4,7 @@ use crate::index::{lock, Index};
 use crate::repository::ItemId;
 use std::collections::HashMap;
 use std::fs::File;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use uuid::Uuid;
 
 impl Index {
@@ -25,6 +25,10 @@ impl Index {
 
         lock::release_lock(&self.index_directory(), self.lock_id)?;
         Ok(())
+    }
+
+    fn index_file_path(&self) -> PathBuf {
+        Path::new(&self.index_path).to_path_buf()
     }
 
     fn load_reusing_lock(path: &Path, lock_id: Uuid) -> Result<Self, BakareError> {
@@ -61,5 +65,13 @@ impl Index {
 
     fn merge_items_by_file_id(&mut self, old_items_by_file_id: HashMap<ItemId, IndexItem>) {
         self.items_by_file_id.extend(old_items_by_file_id);
+    }
+
+    fn index_file_path_for_repository_path(path: &Path) -> PathBuf {
+        path.join("index")
+    }
+
+    fn index_directory(&self) -> PathBuf {
+        self.index_file_path().parent().unwrap().to_path_buf()
     }
 }

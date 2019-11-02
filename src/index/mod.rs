@@ -1,6 +1,6 @@
 use std::collections::hash_map::Iter;
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -34,18 +34,6 @@ impl Index {
             repository_path: repository_path.to_string_lossy().to_string(),
             lock_id: Uuid::new_v4(),
         }
-    }
-
-    fn index_file_path_for_repository_path(path: &Path) -> PathBuf {
-        path.join("index")
-    }
-
-    fn index_directory(&self) -> PathBuf {
-        self.index_file_path().parent().unwrap().to_path_buf()
-    }
-
-    pub fn index_file_path(&self) -> PathBuf {
-        Path::new(&self.index_path).to_path_buf()
     }
 
     pub fn remember(&mut self, original_source_path: &Path, relative_path: &Path, id: ItemId) {
