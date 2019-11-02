@@ -22,7 +22,15 @@ fn delete_lock_file(lock_file_path: String) -> Result<(), BakareError> {
 
 pub fn acquire_lock(lock_id: Uuid, index_directory: &Path) -> Result<(), BakareError> {
     let lock_file_path = lock_file_path(index_directory, lock_id);
+    wait_to_have_sole_lock(lock_id, index_directory)?;
     create_lock_file(lock_file_path.clone())?;
+    Ok(())
+}
+
+pub fn wait_to_have_sole_lock(lock_id: Uuid, index_directory: &Path) -> Result<(), BakareError> {
+    while !sole_lock(lock_id, index_directory)? {
+        thread::sleep(Duration::from_millis(u64::from(rand::random::<u8>())))
+    }
     Ok(())
 }
 

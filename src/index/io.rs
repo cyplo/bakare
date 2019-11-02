@@ -5,9 +5,10 @@ use crate::repository::ItemId;
 use glob::glob;
 use glob::Paths;
 use std::collections::HashMap;
-use std::fs;
 use std::fs::File;
 use std::path::{Path, PathBuf};
+use std::time::Duration;
+use std::{fs, thread};
 use uuid::Uuid;
 
 impl Index {
@@ -46,15 +47,18 @@ impl Index {
             }
 
             self.write_index_to_file(self.index_file_path())?;
+            lock::release_lock(&self.index_directory(), self.lock_id)?;
         }
 
-        lock::release_lock(&self.index_directory(), self.lock_id)?;
         Ok(())
     }
 
-    fn write_index_to_file(&mut self, path: PathBuf) -> Result<(), BakareError> {
-        fs::create_dir_all(path.clone().parent().unwrap()).map_err(|e| (e, path.to_string_lossy().to_string()))?;
-        let index_file = File::create(path.clone()).map_err(|e| (e, path.to_string_lossy().to_string()))?;
+    fn write_index_to_file<T>(&mut self, path: T) -> Result<(), BakareError>
+    where
+        T: AsRef<Path>,
+    {
+        fs::create_dir_all(path.as_ref().parent().unwrap()).map_err(|e| (e, &path))?;
+        let index_file = File::create(&path).map_err(|e| (e, &path))?;
         serde_cbor::to_writer(index_file, &self)?;
         Ok(())
     }
