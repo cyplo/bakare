@@ -12,8 +12,8 @@ use crate::source::TempSource;
 use crate::{backup, restore};
 
 pub fn assert_same_after_restore(source_path: &Path) -> Result<(), BakareError> {
-    let repository_path = tempdir()?.into_path();
-    let restore_target = tempdir()?.into_path();
+    let repository_path = tempdir().unwrap().into_path();
+    let restore_target = tempdir().unwrap().into_path();
 
     assert_ne!(source_path, repository_path);
     assert_ne!(repository_path, restore_target);
@@ -40,7 +40,7 @@ pub fn assert_restored_file_contents(
     contents: &str,
 ) -> Result<(), BakareError> {
     let restore_repository = Repository::open(repository_path)?;
-    let restore_target = tempdir()?;
+    let restore_target = tempdir().unwrap();
     let restore_engine = restore::Engine::new(&restore_repository, &restore_target.path())?;
     let item = restore_repository.newest_item_by_source_path(&source_file_full_path)?;
     restore_engine.restore(&item.unwrap())?;
@@ -55,7 +55,7 @@ pub fn assert_restored_from_version_has_contents(
     old_id: &ItemId,
 ) -> Result<(), BakareError> {
     let restore_repository = Repository::open(repository_path)?;
-    let restore_target = tempdir()?;
+    let restore_target = tempdir().unwrap();
     let restore_engine = restore::Engine::new(&restore_repository, &restore_target.path())?;
     let old_item = restore_repository.item_by_id(&old_id)?;
     restore_engine.restore(&old_item.unwrap())?;
@@ -91,7 +91,7 @@ pub fn backup_file_with_contents(
     {
         let mut backup_repository = Repository::open(repository_path)?;
         let mut backup_engine = backup::Engine::new(source.path(), &mut backup_repository)?;
-        source.write_text_to_file(source_file_relative_path, contents)?;
+        source.write_text_to_file(source_file_relative_path, contents).unwrap();
         backup_engine.backup()?;
         Ok(())
     }
@@ -111,12 +111,12 @@ fn assert_directory_trees_have_same_contents(left: &Path, right: &Path) -> Resul
     let pairs = left_files.iter().zip(right_files);
     for (l, r) in pairs {
         assert_eq!(l.file_name(), r.file_name());
-        let mut fl = File::open(l)?;
-        let mut fr = File::open(r)?;
+        let mut fl = File::open(l).unwrap();
+        let mut fr = File::open(r).unwrap();
         let mut bl = vec![];
         let mut br = vec![];
-        fl.read_to_end(&mut bl)?;
-        fr.read_to_end(&mut br)?;
+        fl.read_to_end(&mut bl).unwrap();
+        fr.read_to_end(&mut br).unwrap();
         assert_eq!(bl, br);
     }
     Ok(())
@@ -143,7 +143,10 @@ pub fn get_sorted_files_recursively(path: &Path) -> Result<Vec<Box<Path>>, Bakar
 fn assert_target_file_contents(restored_path: &Path, expected_contents: &str) -> Result<(), BakareError> {
     let mut actual_contents = String::new();
     assert!(restored_path.exists(), "Expected '{}' to be there", restored_path.display());
-    File::open(restored_path)?.read_to_string(&mut actual_contents)?;
+    File::open(restored_path)
+        .unwrap()
+        .read_to_string(&mut actual_contents)
+        .unwrap();
     assert_eq!(expected_contents, actual_contents);
     Ok(())
 }

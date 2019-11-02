@@ -6,7 +6,7 @@ use std::path::StripPrefixError;
 #[derive(Debug, Fail)]
 pub enum BakareError {
     #[fail(display = "io error")]
-    IOError(Option<io::Error>),
+    IOError(Option<io::Error>, String),
     #[fail(display = "io error: globbing error")]
     IOGlobbingError(Option<glob::PatternError>),
     #[fail(display = "backup source same as repository")]
@@ -23,21 +23,22 @@ pub enum BakareError {
     IndexLoadingError(Option<serde_cbor::Error>),
 }
 
-impl From<io::Error> for BakareError {
-    fn from(e: io::Error) -> Self {
-        BakareError::IOError(Some(e))
+impl From<(io::Error, String)> for BakareError {
+    fn from((e, p): (io::Error, String)) -> Self {
+        BakareError::IOError(Some(e), p)
     }
 }
 
 impl From<walkdir::Error> for BakareError {
     fn from(e: walkdir::Error) -> Self {
-        BakareError::IOError(e.into_io_error())
+        let io_error = e.into_io_error();
+        BakareError::IOError(io_error, "walkdir".to_string())
     }
 }
 
 impl From<StripPrefixError> for BakareError {
     fn from(_: StripPrefixError) -> Self {
-        BakareError::IOError(None)
+        BakareError::IOError(None, "strip prefix error".to_string())
     }
 }
 

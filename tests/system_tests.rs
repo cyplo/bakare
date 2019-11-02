@@ -10,20 +10,20 @@ use std::fs;
 
 #[test]
 fn restore_multiple_files() -> Result<(), BakareError> {
-    let source = TempSource::new()?;
+    let source = TempSource::new().unwrap();
 
-    source.write_text_to_file("first", "some contents")?;
-    source.write_text_to_file("second", "some contents")?;
-    source.write_text_to_file("third", "some other contents")?;
+    source.write_text_to_file("first", "some contents").unwrap();
+    source.write_text_to_file("second", "some contents").unwrap();
+    source.write_text_to_file("third", "some other contents").unwrap();
 
     assert_same_after_restore(source.path())
 }
 
 #[test]
 fn restore_files_after_reopening_repository() -> Result<(), BakareError> {
-    let source = TempSource::new()?;
-    let repository_path = &tempdir()?.into_path();
-    let restore_target = tempdir()?.into_path();
+    let source = TempSource::new().unwrap();
+    let repository_path = &tempdir().unwrap().into_path();
+    let restore_target = tempdir().unwrap().into_path();
     Repository::init(repository_path)?;
 
     let source_file_relative_path = "some file path";
@@ -39,8 +39,8 @@ fn restore_files_after_reopening_repository() -> Result<(), BakareError> {
 
 #[test]
 fn restore_older_version_of_file() -> Result<(), BakareError> {
-    let source = TempSource::new()?;
-    let repository_path = tempdir()?.into_path();
+    let source = TempSource::new().unwrap();
+    let repository_path = tempdir().unwrap().into_path();
     Repository::init(repository_path.as_path())?;
 
     let source_file_relative_path = "some path";
@@ -60,8 +60,8 @@ fn restore_older_version_of_file() -> Result<(), BakareError> {
 
 #[test]
 fn newer_version_should_be_greater_than_earlier_version() -> Result<(), BakareError> {
-    let source = TempSource::new()?;
-    let repository_path = tempdir()?.into_path();
+    let source = TempSource::new().unwrap();
+    let repository_path = tempdir().unwrap().into_path();
     Repository::init(repository_path.as_path())?;
 
     let source_file_relative_path = "some path";
@@ -84,8 +84,8 @@ fn newer_version_should_be_greater_than_earlier_version() -> Result<(), BakareEr
 
 #[test]
 fn store_duplicated_files_just_once() -> Result<(), BakareError> {
-    let source = TempSource::new()?;
-    let repository_path = &tempdir()?.into_path();
+    let source = TempSource::new().unwrap();
+    let repository_path = &tempdir().unwrap().into_path();
     Repository::init(repository_path)?;
     assert_eq!(data_weight(&repository_path)?, 0);
 
@@ -106,8 +106,8 @@ fn store_duplicated_files_just_once() -> Result<(), BakareError> {
 
 #[test]
 fn restore_latest_version_by_default() -> Result<(), BakareError> {
-    let source = TempSource::new()?;
-    let repository_path = &tempdir()?.into_path();
+    let source = TempSource::new().unwrap();
+    let repository_path = &tempdir().unwrap().into_path();
     Repository::init(repository_path)?;
 
     let source_file_relative_path = "some path";
@@ -121,7 +121,7 @@ fn restore_latest_version_by_default() -> Result<(), BakareError> {
 
 #[test]
 fn forbid_backup_of_paths_within_repository() -> Result<(), BakareError> {
-    let repository_path = &tempdir()?.into_path();
+    let repository_path = &tempdir().unwrap().into_path();
     Repository::init(repository_path)?;
     let mut repository = Repository::open(repository_path)?;
     let error = backup::Engine::new(repository_path, &mut repository).err().unwrap();
@@ -135,24 +135,26 @@ fn forbid_backup_of_paths_within_repository() -> Result<(), BakareError> {
 
 #[test]
 fn handle_concurrent_backups() -> Result<(), BakareError> {
-    let repository_path = &tempdir()?.into_path();
+    let repository_path = &tempdir().unwrap().into_path();
     Repository::init(repository_path)?;
 
-    let parallel_backups_number = 4;
+    let parallel_backups_number = 8;
     (0..parallel_backups_number)
         .collect::<Vec<_>>()
         .par_iter()
         .map(|task_number| {
             let mut repository = Repository::open(repository_path)?;
-            let source = TempSource::new()?;
+            let source = TempSource::new().unwrap();
             let mut backup_engine = backup::Engine::new(source.path(), &mut repository)?;
-            source.write_text_to_file(&task_number.to_string(), &task_number.to_string())?;
+            source
+                .write_text_to_file(&task_number.to_string(), &task_number.to_string())
+                .unwrap();
             backup_engine.backup()?;
             Ok(())
         })
         .collect::<Result<(), BakareError>>()?;
 
-    let restore_target = tempdir()?.into_path();
+    let restore_target = tempdir().unwrap().into_path();
     {
         let restore_repository = Repository::open(repository_path.as_path())?;
         let restore_engine = restore::Engine::new(&restore_repository, &restore_target)?;
@@ -162,8 +164,11 @@ fn handle_concurrent_backups() -> Result<(), BakareError> {
         let all_restored_files = get_sorted_files_recursively(&restore_target)?;
         assert_eq!(all_restored_files.len(), parallel_backups_number);
         for i in 0..parallel_backups_number {
-            let path = restore_target.join(i.to_string());
-            let contents = fs::read_to_string(path)?;
+            let file_name = format!("{}", i);
+            let file = all_restored_files.iter().find(|f| f.ends_with(file_name.clone()));
+            assert!(file.is_some());
+            assert!(file.unwrap().exists(), "file {:?} does not exist", file);
+            let contents = fs::read_to_string(file.unwrap()).unwrap();
             assert_eq!(i.to_string(), contents.to_owned());
         }
     }

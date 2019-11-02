@@ -35,13 +35,13 @@ impl RepositoryItem {
         }
         let parent = target_path.parent().unwrap();
         if !parent.exists() {
-            fs::create_dir_all(parent)?;
+            fs::create_dir_all(parent).map_err(|e| (e, parent.to_string_lossy().to_string()))?;
         }
         if !self.absolute_path.exists() {
             return Err(BakareError::CorruptedRepoNoFile);
         }
         println!("restoring {} to {}", &self.absolute_path.display(), &target_path.display());
-        fs::copy(&self.absolute_path, &target_path)?;
+        fs::copy(&self.absolute_path, &target_path).map_err(|e| (e, target_path.to_string_lossy().to_string()))?;
 
         Ok(())
     }

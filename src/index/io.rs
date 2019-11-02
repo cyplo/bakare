@@ -20,7 +20,8 @@ impl Index {
 
         self.reload_and_merge()?;
 
-        let index_file = File::create(self.index_file_path())?;
+        let index_file =
+            File::create(self.index_file_path()).map_err(|e| (e, self.index_file_path().to_string_lossy().to_string()))?;
         serde_cbor::to_writer(index_file, &self)?;
 
         lock::release_lock(&self.index_directory(), self.lock_id)?;
@@ -34,7 +35,7 @@ impl Index {
     fn load_reusing_lock(path: &Path, lock_id: Uuid) -> Result<Self, BakareError> {
         lock::acquire_lock(lock_id, path)?;
         let index_file_path = Index::index_file_path_for_repository_path(path);
-        let index_file = File::open(index_file_path)?;
+        let index_file = File::open(index_file_path.clone()).map_err(|e| (e, index_file_path.to_string_lossy().to_string()))?;
         let mut index: Index = serde_cbor::from_reader(index_file)?;
         index.lock_id = lock_id;
         Ok(index)

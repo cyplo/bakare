@@ -103,8 +103,9 @@ impl<'a> Repository<'a> {
         let destination_path = Path::new(&destination_path);
 
         if source_path.is_file() {
-            fs::create_dir_all(destination_path.parent().unwrap())?;
-            fs::copy(source_path, destination_path)?;
+            let parent = destination_path.parent().unwrap();
+            fs::create_dir_all(parent).map_err(|e| (e, parent.to_string_lossy().to_string()))?;
+            fs::copy(source_path, destination_path).map_err(|e| (e, destination_path.to_string_lossy().to_string()))?;
             let relative_path = destination_path.strip_prefix(self.path)?;
             self.index.remember(source_path, relative_path, id);
             self.index.save()?;
@@ -145,11 +146,11 @@ impl<'a> Repository<'a> {
     }
 
     fn calculate_id(source_path: &Path) -> Result<ItemId, BakareError> {
-        let source_file = File::open(source_path)?;
+        let source_file = File::open(source_path).map_err(|e| (e, source_path.to_string_lossy().to_string()))?;
         let mut reader = BufReader::new(source_file);
         let mut hasher = Sha512::new();
 
-        io::copy(&mut reader, &mut hasher)?;
+        io::copy(&mut reader, &mut hasher).map_err(|e| (e, source_path.to_string_lossy().to_string()))?;
 
         Ok(hasher.result().as_slice().into())
     }
