@@ -122,7 +122,7 @@ fn assert_directory_trees_have_same_contents(left: &Path, right: &Path) -> Resul
     Ok(())
 }
 
-fn get_sorted_files_recursively(path: &Path) -> Result<Vec<Box<Path>>, BakareError> {
+pub fn get_sorted_files_recursively(path: &Path) -> Result<Vec<Box<Path>>, BakareError> {
     let walker = WalkDir::new(path).sort_by(|a, b| a.file_name().cmp(b.file_name()));
 
     let mut result = vec![];
