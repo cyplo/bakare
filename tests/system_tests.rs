@@ -5,6 +5,7 @@ use bakare::error::BakareError;
 use bakare::repository::Repository;
 use bakare::source::TempSource;
 use bakare::test::assertions::*;
+use rayon::prelude::*;
 
 #[test]
 fn restore_multiple_files() -> Result<(), BakareError> {
@@ -131,6 +132,27 @@ fn forbid_backup_of_paths_within_repository() -> Result<(), BakareError> {
     Ok(())
 }
 
-// TODO: test concurrent writes
+#[test]
+fn handle_concurrent_backups() -> Result<(), BakareError> {
+    let repository_path = &tempdir()?.into_path();
+    let source = TempSource::new()?;
+    Repository::init(repository_path)?;
+
+    (1..16)
+        .collect::<Vec<_>>()
+        .par_iter()
+        .map(|task_number| {
+            let mut repository = Repository::open(repository_path)?;
+            let mut backup_engine = backup::Engine::new(source.path(), &mut repository)?;
+            source.write_text_to_file(&task_number.to_string(), &task_number.to_string())?;
+            backup_engine.backup()?;
+            Ok(())
+        })
+        .collect::<Result<(), BakareError>>()?;
+
+    assert_same_after_restore(source.path())
+}
+
 // TODO: index corruption
 // TODO: encryption
+// TODO: resume from sleep while backup in progress
