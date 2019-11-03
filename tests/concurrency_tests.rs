@@ -16,7 +16,7 @@ fn handle_concurrent_backups() -> Result<(), BakareError> {
     let repository_path = &tempdir().unwrap().into_path();
     Repository::init(repository_path)?;
 
-    let parallel_backups_number = 8;
+    let parallel_backups_number = 1;
     let files_per_backup_number = 16;
     let total_number_of_files = parallel_backups_number * files_per_backup_number;
     let finished_backup_runs = backup_in_parallel(repository_path, parallel_backups_number, files_per_backup_number)?;
