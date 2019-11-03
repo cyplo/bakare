@@ -25,8 +25,8 @@ pub fn assert_same_after_restore(source_path: &Path) -> Result<(), BakareError> 
         backup_engine.backup()?;
     }
     {
-        let restore_repository = Repository::open(repository_path.as_path())?;
-        let restore_engine = restore::Engine::new(&restore_repository, &restore_target)?;
+        let mut restore_repository = Repository::open(repository_path.as_path())?;
+        let mut restore_engine = restore::Engine::new(&mut restore_repository, &restore_target)?;
         restore_engine.restore_all()?;
     }
 
@@ -39,10 +39,11 @@ pub fn assert_restored_file_contents(
     source_file_full_path: &Path,
     contents: &str,
 ) -> Result<(), BakareError> {
-    let restore_repository = Repository::open(repository_path)?;
-    let restore_target = tempdir().unwrap();
-    let restore_engine = restore::Engine::new(&restore_repository, &restore_target.path())?;
+    let mut restore_repository = Repository::open(repository_path)?;
     let item = restore_repository.newest_item_by_source_path(&source_file_full_path)?;
+    let restore_target = tempdir().unwrap();
+    let restore_engine = restore::Engine::new(&mut restore_repository, &restore_target.path())?;
+
     restore_engine.restore(&item.unwrap())?;
     let restored_file_path = restore_target.path().join(source_file_full_path.strip_prefix("/")?);
     assert_target_file_contents(&restored_file_path, contents)
@@ -54,10 +55,10 @@ pub fn assert_restored_from_version_has_contents(
     old_contents: &str,
     old_id: &ItemId,
 ) -> Result<(), BakareError> {
-    let restore_repository = Repository::open(repository_path)?;
-    let restore_target = tempdir().unwrap();
-    let restore_engine = restore::Engine::new(&restore_repository, &restore_target.path())?;
+    let mut restore_repository = Repository::open(repository_path)?;
     let old_item = restore_repository.item_by_id(&old_id)?;
+    let restore_target = tempdir().unwrap();
+    let restore_engine = restore::Engine::new(&mut restore_repository, &restore_target.path())?;
     restore_engine.restore(&old_item.unwrap())?;
     let restored_file_path = restore_target.path().join(source_file_full_path.strip_prefix("/")?);
     assert_target_file_contents(&restored_file_path, old_contents)
@@ -75,8 +76,8 @@ pub fn newest_item(repository_path: &Path, source_file_full_path: &Path) -> Resu
 
 pub fn restore_all_from_reloaded_repository(repository_path: &Path, restore_target: &Path) -> Result<(), BakareError> {
     {
-        let restore_repository = Repository::open(repository_path)?;
-        let restore_engine = restore::Engine::new(&restore_repository, &restore_target)?;
+        let mut restore_repository = Repository::open(repository_path)?;
+        let mut restore_engine = restore::Engine::new(&mut restore_repository, &restore_target)?;
         restore_engine.restore_all()?;
         Ok(())
     }

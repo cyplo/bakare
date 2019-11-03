@@ -69,11 +69,11 @@ where
 
 fn restore_all<T: AsRef<Path>>(repository_path: T) -> Result<Vec<Box<Path>>, BakareError> {
     let restore_target = tempdir().unwrap().into_path();
-    let restore_repository = Repository::open(repository_path.as_ref())?;
+    let mut restore_repository = Repository::open(repository_path.as_ref())?;
     let side_indexes_path = repository_path.as_ref().join("side_indexes");
     let side_indexes = get_sorted_files_recursively(side_indexes_path)?;
     assert_eq!(side_indexes.iter().count(), 0);
-    let restore_engine = restore::Engine::new(&restore_repository, restore_target.as_ref())?;
+    let mut restore_engine = restore::Engine::new(&mut restore_repository, restore_target.as_ref())?;
     restore_engine.restore_all()?;
     get_sorted_files_recursively(&restore_target)
 }
