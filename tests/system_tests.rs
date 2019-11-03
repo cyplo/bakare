@@ -1,10 +1,6 @@
-use std::fs;
-use std::path::Path;
-
-use rayon::prelude::*;
 use tempfile::tempdir;
 
-use bakare::{backup, restore};
+use bakare::backup;
 use bakare::error::BakareError;
 use bakare::repository::Repository;
 use bakare::source::TempSource;

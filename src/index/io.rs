@@ -53,7 +53,7 @@ impl Index {
 
             let indexes = self.all_side_indexes()?;
             for index in indexes {
-                self.load_and_merge(&index?)?;
+                self.merge_with(&index?)?;
             }
         }
 
@@ -100,7 +100,7 @@ impl Index {
         Ok(index)
     }
 
-    fn load_and_merge(&mut self, other_index_path: &PathBuf) -> Result<(), BakareError> {
+    fn merge_with(&mut self, other_index_path: &PathBuf) -> Result<(), BakareError> {
         let old_index = Index::load_reusing_lock(other_index_path, self.lock_id)?;
         {
             self.merge_items_by_file_id(old_index.items_by_file_id);
