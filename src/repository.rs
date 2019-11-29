@@ -4,14 +4,14 @@ use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use std::{fmt, fs, io};
 
+use crate::index::{Index, IndexItemIterator};
+use crate::repository_item::RepositoryItem;
+use anyhow::Result;
+use anyhow::*;
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
 use sha2::Sha512;
 use walkdir::WalkDir;
-
-use crate::error::BakareError;
-use crate::index::{Index, IndexItemIterator};
-use crate::repository_item::RepositoryItem;
 
 /// represents a place where backup is stored an can be restored from.
 /// right now only on-disk directory storage is supported
@@ -75,15 +75,15 @@ impl fmt::Display for ItemId {
 }
 
 impl<'a> Repository<'a> {
-    pub fn init(path: &Path) -> Result<(), BakareError> {
+    pub fn init(path: &Path) -> Result<()> {
         let mut index = Index::new(path);
         index.save()?;
         Ok(())
     }
 
-    pub fn open(path: &Path) -> Result<Repository, BakareError> {
+    pub fn open(path: &Path) -> Result<Repository> {
         if !path.is_absolute() {
-            return Err(BakareError::RepositoryPathNotAbsolute);
+            return Err(anyhow!("path to repository not absolute"));
         }
 
         let index = Index::load(path)?;
@@ -94,18 +94,18 @@ impl<'a> Repository<'a> {
         &self.path
     }
 
-    pub fn save_index(&mut self) -> Result<(), BakareError> {
+    pub fn save_index(&mut self) -> Result<()> {
         self.index.save()
     }
 
-    pub fn merge_indexes(&mut self) -> Result<(), BakareError> {
+    pub fn merge_indexes(&mut self) -> Result<()> {
         self.index.absorb_other()?;
         self.index.save()
     }
 
-    pub fn store(&mut self, source_path: &Path) -> Result<(), BakareError> {
+    pub fn store(&mut self, source_path: &Path) -> Result<()> {
         if !source_path.is_absolute() {
-            return Err(BakareError::PathToStoreNotAbsolute);
+            return Err(anyhow!("path to store not absolute"));
         }
         let id = Repository::calculate_id(source_path)?;
         let destination_path = self.data_dir();
@@ -114,22 +114,22 @@ impl<'a> Repository<'a> {
 
         if source_path.is_file() {
             let parent = destination_path.parent().unwrap();
-            fs::create_dir_all(parent).map_err(|e| (e, parent.to_string_lossy().to_string()))?;
-            fs::copy(source_path, destination_path).map_err(|e| (e, destination_path.to_string_lossy().to_string()))?;
+            fs::create_dir_all(parent)?;
+            fs::copy(source_path, destination_path)?;
             let relative_path = destination_path.strip_prefix(self.path)?;
             self.index.remember(source_path, relative_path, id);
         }
         Ok(())
     }
 
-    pub fn newest_item_by_source_path(&self, path: &Path) -> Result<Option<RepositoryItem>, BakareError> {
+    pub fn newest_item_by_source_path(&self, path: &Path) -> Result<Option<RepositoryItem>> {
         Ok(self
             .index
             .newest_item_by_source_path(path)?
             .map(|i| self.index.repository_item(&i)))
     }
 
-    pub fn item_by_id(&self, id: &ItemId) -> Result<Option<RepositoryItem>, BakareError> {
+    pub fn item_by_id(&self, id: &ItemId) -> Result<Option<RepositoryItem>> {
         self.index.item_by_id(id).map(|i| i.map(|i| self.index.repository_item(&i)))
     }
 
@@ -140,7 +140,7 @@ impl<'a> Repository<'a> {
         }
     }
 
-    pub fn data_weight(&self) -> Result<u64, BakareError> {
+    pub fn data_weight(&self) -> Result<u64> {
         let total_size = WalkDir::new(self.data_dir())
             .into_iter()
             .filter_map(|entry| entry.ok())
@@ -154,12 +154,12 @@ impl<'a> Repository<'a> {
         self.path().join(DATA_DIR_NAME)
     }
 
-    fn calculate_id(source_path: &Path) -> Result<ItemId, BakareError> {
-        let source_file = File::open(source_path).map_err(|e| (e, source_path.to_string_lossy().to_string()))?;
+    fn calculate_id(source_path: &Path) -> Result<ItemId> {
+        let source_file = File::open(source_path)?;
         let mut reader = BufReader::new(source_file);
         let mut hasher = Sha512::new();
 
-        io::copy(&mut reader, &mut hasher).map_err(|e| (e, source_path.to_string_lossy().to_string()))?;
+        io::copy(&mut reader, &mut hasher)?;
 
         Ok(hasher.result().as_slice().into())
     }

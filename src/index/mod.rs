@@ -5,10 +5,11 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::error::BakareError;
 use crate::index::item::IndexItem;
 use crate::repository::{ItemId, Version};
 use crate::repository_item::RepositoryItem;
+use anyhow::Result;
+use anyhow::*;
 
 mod io;
 mod item;
@@ -72,9 +73,9 @@ impl Index {
         )
     }
 
-    pub fn newest_item_by_source_path(&self, path: &Path) -> Result<Option<IndexItem>, BakareError> {
+    pub fn newest_item_by_source_path(&self, path: &Path) -> Result<Option<IndexItem>> {
         if !path.is_absolute() {
-            return Err(BakareError::RepositoryPathNotAbsolute);
+            return Err(anyhow!("repository path not absolute"));
         }
         Ok(self
             .newest_items_by_source_path
@@ -82,7 +83,7 @@ impl Index {
             .cloned())
     }
 
-    pub fn item_by_id(&self, id: &ItemId) -> Result<Option<IndexItem>, BakareError> {
+    pub fn item_by_id(&self, id: &ItemId) -> Result<Option<IndexItem>> {
         Ok(self.items_by_file_id.get(id).cloned())
     }
 

@@ -5,13 +5,13 @@ use std::path::Path;
 use tempfile::tempdir;
 use walkdir::WalkDir;
 
-use crate::error::BakareError;
 use crate::repository::{ItemId, Repository};
 use crate::repository_item::RepositoryItem;
 use crate::source::TempSource;
 use crate::{backup, restore};
+use anyhow::Result;
 
-pub fn assert_same_after_restore(source_path: &Path) -> Result<(), BakareError> {
+pub fn assert_same_after_restore(source_path: &Path) -> Result<()> {
     let repository_path = tempdir().unwrap().into_path();
     let restore_target = tempdir().unwrap().into_path();
 
@@ -34,11 +34,7 @@ pub fn assert_same_after_restore(source_path: &Path) -> Result<(), BakareError> 
     Ok(())
 }
 
-pub fn assert_restored_file_contents(
-    repository_path: &Path,
-    source_file_full_path: &Path,
-    contents: &str,
-) -> Result<(), BakareError> {
+pub fn assert_restored_file_contents(repository_path: &Path, source_file_full_path: &Path, contents: &str) -> Result<()> {
     let mut restore_repository = Repository::open(repository_path)?;
     let item = restore_repository.newest_item_by_source_path(&source_file_full_path)?;
     let restore_target = tempdir().unwrap();
@@ -54,7 +50,7 @@ pub fn assert_restored_from_version_has_contents(
     source_file_full_path: &Path,
     old_contents: &str,
     old_id: &ItemId,
-) -> Result<(), BakareError> {
+) -> Result<()> {
     let mut restore_repository = Repository::open(repository_path)?;
     let old_item = restore_repository.item_by_id(&old_id)?;
     let restore_target = tempdir().unwrap();
@@ -64,7 +60,7 @@ pub fn assert_restored_from_version_has_contents(
     assert_target_file_contents(&restored_file_path, old_contents)
 }
 
-pub fn newest_item(repository_path: &Path, source_file_full_path: &Path) -> Result<RepositoryItem, BakareError> {
+pub fn newest_item(repository_path: &Path, source_file_full_path: &Path) -> Result<RepositoryItem> {
     let item = {
         let reading_repository = Repository::open(repository_path)?;
         let item = reading_repository.newest_item_by_source_path(&source_file_full_path)?;
@@ -74,7 +70,7 @@ pub fn newest_item(repository_path: &Path, source_file_full_path: &Path) -> Resu
     Ok(item)
 }
 
-pub fn restore_all_from_reloaded_repository(repository_path: &Path, restore_target: &Path) -> Result<(), BakareError> {
+pub fn restore_all_from_reloaded_repository(repository_path: &Path, restore_target: &Path) -> Result<()> {
     {
         let mut restore_repository = Repository::open(repository_path)?;
         let mut restore_engine = restore::Engine::new(&mut restore_repository, &restore_target)?;
@@ -88,7 +84,7 @@ pub fn backup_file_with_contents(
     repository_path: &Path,
     source_file_relative_path: &str,
     contents: &str,
-) -> Result<(), BakareError> {
+) -> Result<()> {
     {
         let mut backup_repository = Repository::open(repository_path)?;
         let mut backup_engine = backup::Engine::new(source.path(), &mut backup_repository)?;
@@ -98,14 +94,14 @@ pub fn backup_file_with_contents(
     }
 }
 
-pub fn data_weight(repository_path: &Path) -> Result<u64, BakareError> {
+pub fn data_weight(repository_path: &Path) -> Result<u64> {
     {
         let repository = Repository::open(repository_path)?;
         Ok(repository.data_weight()?)
     }
 }
 
-fn assert_directory_trees_have_same_contents(left: &Path, right: &Path) -> Result<(), BakareError> {
+fn assert_directory_trees_have_same_contents(left: &Path, right: &Path) -> Result<()> {
     let left_files = get_sorted_files_recursively(left)?;
     let right_files = get_sorted_files_recursively(right)?;
 
@@ -123,7 +119,7 @@ fn assert_directory_trees_have_same_contents(left: &Path, right: &Path) -> Resul
     Ok(())
 }
 
-pub fn get_sorted_files_recursively<T: AsRef<Path>>(path: T) -> Result<Vec<Box<Path>>, BakareError> {
+pub fn get_sorted_files_recursively<T: AsRef<Path>>(path: T) -> Result<Vec<Box<Path>>> {
     let walker = WalkDir::new(path.as_ref()).sort_by(|a, b| a.file_name().cmp(b.file_name()));
 
     let mut result = vec![];
@@ -141,7 +137,7 @@ pub fn get_sorted_files_recursively<T: AsRef<Path>>(path: T) -> Result<Vec<Box<P
     Ok(result)
 }
 
-fn assert_target_file_contents(restored_path: &Path, expected_contents: &str) -> Result<(), BakareError> {
+fn assert_target_file_contents(restored_path: &Path, expected_contents: &str) -> Result<()> {
     let mut actual_contents = String::new();
     assert!(restored_path.exists(), "Expected '{}' to be there", restored_path.display());
     File::open(restored_path)

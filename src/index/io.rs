@@ -10,13 +10,13 @@ use uuid::Uuid;
 use glob::glob;
 use glob::Paths;
 
-use crate::error::BakareError;
 use crate::index::item::IndexItem;
 use crate::index::{lock, Index};
 use crate::repository::ItemId;
+use anyhow::Result;
 
 impl Index {
-    pub fn load(path: &Path) -> Result<Self, BakareError> {
+    pub fn load(path: &Path) -> Result<Self> {
         let lock_id = Uuid::new_v4();
         lock::acquire_lock(lock_id, path)?;
         let mut index = Index::load_reusing_lock(&Index::index_file_path_for_repository_path(path), lock_id)?;
@@ -25,7 +25,7 @@ impl Index {
         Ok(index)
     }
 
-    pub fn save(&mut self) -> Result<(), BakareError> {
+    pub fn save(&mut self) -> Result<()> {
         lock::acquire_lock(self.lock_id, &self.index_directory())?;
 
         let sole_lock = lock::sole_lock(self.lock_id, &self.index_directory())?;
@@ -39,14 +39,14 @@ impl Index {
         Ok(())
     }
 
-    pub fn absorb_other(&mut self) -> Result<(), BakareError> {
+    pub fn absorb_other(&mut self) -> Result<()> {
         lock::acquire_lock(self.lock_id, &self.index_directory())?;
         self.absorb_other_no_lock()?;
         lock::release_lock(&self.index_directory(), self.lock_id)?;
         Ok(())
     }
 
-    fn absorb_other_no_lock(&mut self) -> Result<(), BakareError> {
+    fn absorb_other_no_lock(&mut self) -> Result<()> {
         let sole_lock = lock::sole_lock(self.lock_id, &self.index_directory())?;
         if sole_lock {
             self.write_index_to_file(self.side_index_file_path())?;
@@ -60,17 +60,14 @@ impl Index {
         Ok(())
     }
 
-    fn write_index_to_file<T>(&mut self, path: T) -> Result<(), BakareError>
+    fn write_index_to_file<T>(&mut self, path: T) -> Result<()>
     where
         T: AsRef<Path>,
     {
-        fs::create_dir_all(path.as_ref().parent().unwrap()).map_err(|e| (e, &path))?;
+        fs::create_dir_all(path.as_ref().parent().unwrap())?;
 
         let file = AtomicFile::new(&path, AllowOverwrite);
-        file.write(|f| serde_cbor::to_writer(f, &self)).map_err(|e| match e {
-            atomicwrites::Error::Internal(e) => BakareError::from((e, &path)),
-            atomicwrites::Error::User(e) => BakareError::from(e),
-        })?;
+        file.write(|f| serde_cbor::to_writer(f, &self))?;
 
         Ok(())
     }
@@ -87,26 +84,26 @@ impl Index {
         Path::new(&self.repository_path).join("side_indexes")
     }
 
-    fn all_side_indexes(&self) -> Result<Paths, BakareError> {
+    fn all_side_indexes(&self) -> Result<Paths> {
         let glob_pattern = format!("{}/*", self.side_indexes_path().to_string_lossy());
         Ok(glob(&glob_pattern)?)
     }
 
-    fn load_reusing_lock(index_file_path: &Path, lock_id: Uuid) -> Result<Self, BakareError> {
-        let index_file = File::open(&index_file_path).map_err(|e| (e, index_file_path))?;
+    fn load_reusing_lock(index_file_path: &Path, lock_id: Uuid) -> Result<Self> {
+        let index_file = File::open(&index_file_path)?;
         let mut index: Index = serde_cbor::from_reader(index_file)?;
         index.lock_id = lock_id;
         index.index_path = index_file_path.to_string_lossy().to_string();
         Ok(index)
     }
 
-    fn merge_with(&mut self, other_index_path: &PathBuf) -> Result<(), BakareError> {
+    fn merge_with(&mut self, other_index_path: &PathBuf) -> Result<()> {
         let old_index = Index::load_reusing_lock(other_index_path, self.lock_id)?;
         {
             self.merge_items_by_file_id(old_index.items_by_file_id);
             self.merge_newest_items(old_index.newest_items_by_source_path);
         }
-        fs::remove_file(&other_index_path).map_err(|e| (e, &self.index_path))?;
+        fs::remove_file(&other_index_path)?;
         Ok(())
     }
 

@@ -4,7 +4,7 @@ use std::{fs, thread};
 use rayon::prelude::*;
 use tempfile::tempdir;
 
-use bakare::error::BakareError;
+use anyhow::Result;
 use bakare::repository::Repository;
 use bakare::source::TempSource;
 use bakare::test::assertions::*;
@@ -12,7 +12,7 @@ use bakare::{backup, restore};
 use std::time::Duration;
 
 #[test]
-fn handle_concurrent_backups() -> Result<(), BakareError> {
+fn handle_concurrent_backups() -> Result<()> {
     let repository_path = &tempdir().unwrap().into_path();
     Repository::init(repository_path)?;
 
@@ -45,7 +45,7 @@ fn backup_in_parallel<T>(
     repository_path: T,
     parallel_backups_number: usize,
     files_per_backup_number: usize,
-) -> Result<Vec<usize>, BakareError>
+) -> Result<Vec<usize>>
 where
     T: AsRef<Path> + Sync,
 {
@@ -67,7 +67,7 @@ where
         .collect()
 }
 
-fn restore_all<T: AsRef<Path>>(repository_path: T) -> Result<Vec<Box<Path>>, BakareError> {
+fn restore_all<T: AsRef<Path>>(repository_path: T) -> Result<Vec<Box<Path>>> {
     let restore_target = tempdir().unwrap().into_path();
     let mut restore_repository = Repository::open(repository_path.as_ref())?;
     let side_indexes_path = repository_path.as_ref().join("side_indexes");
