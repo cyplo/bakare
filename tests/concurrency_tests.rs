@@ -16,7 +16,7 @@ fn handle_concurrent_backups() -> Result<()> {
     let repository_path = &tempdir().unwrap().into_path();
     Repository::init(repository_path)?;
 
-    let parallel_backups_number = 4;
+    let parallel_backups_number = 1;
     let files_per_backup_number = 16;
     let total_number_of_files = parallel_backups_number * files_per_backup_number;
     let finished_backup_runs = backup_in_parallel(repository_path, parallel_backups_number, files_per_backup_number)?;
@@ -79,7 +79,7 @@ fn restore_all<T: AsRef<Path>>(repository_path: T) -> Result<Vec<Box<Path>>> {
     let mut restore_repository = Repository::open(repository_path.as_ref())?;
     let side_indexes_path = repository_path.as_ref().join("side_indexes");
     let side_indexes = get_sorted_files_recursively(side_indexes_path)?;
-    assert_eq!(side_indexes.iter().count(), 0);
+    assert_eq!(side_indexes.iter().count(), 0, "leftover side indexes");
     let mut restore_engine = restore::Engine::new(&mut restore_repository, restore_target.as_ref())?;
     restore_engine.restore_all()?;
     get_sorted_files_recursively(&restore_target)

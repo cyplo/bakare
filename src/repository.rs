@@ -26,7 +26,7 @@ pub struct Repository<'a> {
 const DATA_DIR_NAME: &str = "data";
 
 #[derive(Clone, Debug, PartialOrd, PartialEq, Ord, Eq, Serialize, Deserialize, Hash)]
-pub struct ItemId(Box<[u8]>);
+pub struct ItemId(#[serde(with = "base64")] Vec<u8>);
 
 #[derive(Clone, Debug, PartialOrd, PartialEq, Ord, Eq, Serialize, Deserialize, Hash)]
 pub struct Version(u128);
@@ -34,6 +34,26 @@ pub struct Version(u128);
 pub struct RepositoryItemIterator<'a> {
     iterator: IndexItemIterator<'a>,
     index: &'a Index,
+}
+
+mod base64 {
+    use base64;
+    use serde::{de, Deserialize, Deserializer, Serializer};
+
+    pub fn serialize<S>(bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&base64::encode(bytes))
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = <&str>::deserialize(deserializer)?;
+        base64::decode(s).map_err(de::Error::custom)
+    }
 }
 
 impl<'a> Iterator for RepositoryItemIterator<'a> {
@@ -64,7 +84,7 @@ impl AsRef<[u8]> for ItemId {
 
 impl From<&[u8]> for ItemId {
     fn from(a: &[u8]) -> Self {
-        ItemId(Box::from(a))
+        ItemId(a.into())
     }
 }
 
