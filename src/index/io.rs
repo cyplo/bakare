@@ -22,6 +22,7 @@ impl Index {
         let mut index = Index::load_reusing_lock(&Index::index_file_path_for_repository_path(path), lock_id)?;
         index.absorb_other_no_lock()?;
         lock::release_lock(path, lock_id)?;
+
         Ok(index)
     }
 

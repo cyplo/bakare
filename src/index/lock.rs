@@ -23,14 +23,16 @@ fn delete_lock_file(lock_file_path: String) -> Result<()> {
 }
 
 pub fn acquire_lock(lock_id: Uuid, index_directory: &Path) -> Result<()> {
-    wait_to_have_sole_lock(lock_id, index_directory)?;
     create_lock_file(lock_id, index_directory)?;
+    wait_to_have_sole_lock(lock_id, index_directory)?;
     Ok(())
 }
 
 pub fn wait_to_have_sole_lock(lock_id: Uuid, index_directory: &Path) -> Result<()> {
     while !sole_lock(lock_id, index_directory)? {
-        thread::sleep(Duration::from_millis(u64::from(rand::random::<u8>())))
+        release_lock(index_directory, lock_id)?;
+        thread::sleep(Duration::from_millis(u64::from(rand::random::<u8>())));
+        create_lock_file(lock_id, index_directory)?;
     }
     Ok(())
 }

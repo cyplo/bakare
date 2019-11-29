@@ -1,22 +1,22 @@
 use std::path::Path;
 use std::{fs, thread};
 
-use rayon::prelude::*;
-use tempfile::tempdir;
-
 use anyhow::Result;
 use bakare::repository::Repository;
 use bakare::source::TempSource;
 use bakare::test::assertions::*;
 use bakare::{backup, restore};
+use rayon::prelude::*;
 use std::time::Duration;
+use tempfile::tempdir;
 
 #[test]
 fn handle_concurrent_backups() -> Result<()> {
+    setup_logger();
     let repository_path = &tempdir().unwrap().into_path();
     Repository::init(repository_path)?;
 
-    let parallel_backups_number = 1;
+    let parallel_backups_number = 4;
     let files_per_backup_number = 16;
     let total_number_of_files = parallel_backups_number * files_per_backup_number;
     let finished_backup_runs = backup_in_parallel(repository_path, parallel_backups_number, files_per_backup_number)?;
@@ -35,6 +35,13 @@ fn handle_concurrent_backups() -> Result<()> {
         }
     }
     Ok(())
+}
+
+fn setup_logger() {
+    let logger = femme::pretty::Logger::new();
+    async_log::Logger::wrap(logger, rand::random::<u64>)
+        .start(log::LevelFilter::Trace)
+        .unwrap();
 }
 
 fn file_id(i: usize, j: usize) -> String {
