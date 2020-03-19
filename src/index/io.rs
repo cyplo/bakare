@@ -13,7 +13,6 @@ use crate::index::{lock, Index};
 use crate::repository::ItemId;
 use anyhow::Context;
 use anyhow::Result;
-use async_log::*;
 use std::io::Write;
 
 impl Index {
@@ -108,7 +107,7 @@ impl Index {
             let mut index: Index =
                 serde_json::from_str(&index_text).context(format!("cannot read index from: {}", index_text))?;
             index.lock_id = lock_id;
-            index.index_path = path_text.clone();
+            index.index_path = path_text;
             Ok(index)
         })
     }

@@ -54,7 +54,7 @@ impl Index {
 
         self.items_by_file_id.insert(item.id(), item.clone());
         self.newest_items_by_source_path
-            .insert(original_source_path.to_string_lossy().to_string(), item.clone());
+            .insert(original_source_path.to_string_lossy().to_string(), item);
     }
 
     pub fn repository_item(&self, i: &IndexItem) -> RepositoryItem {

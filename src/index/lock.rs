@@ -20,7 +20,7 @@ pub fn release_lock(path: &Path, lock_id: Uuid) -> Result<()> {
 
 fn delete_lock_file(lock_file_path: PathBuf) -> Result<()> {
     if lock_file_path.exists() {
-        fs::remove_file(lock_file_path.clone())?;
+        fs::remove_file(lock_file_path)?;
     }
     Ok(())
 }
