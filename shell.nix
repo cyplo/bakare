@@ -9,6 +9,9 @@ in
     buildInputs = [
       channel.rust
       cacert openssl openssh zlib
-      pkgconfig clang
+      pkgconfig clang llvm
     ];
+    shellHook = ''
+      export RUST_SRC_PATH="${channel.rust-src}/lib/rustlib/src/rust/src"
+    '';
   }
