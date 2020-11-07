@@ -151,6 +151,6 @@ impl<'a> Repository<'a> {
 
         io::copy(&mut reader, &mut hasher)?;
 
-        Ok(hasher.result().as_slice().into())
+        Ok(hasher.finalize()[..].into())
     }
 }
