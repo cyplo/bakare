@@ -1,0 +1,23 @@
+image: nixos/latest
+sources:
+  - git@git.sr.ht:~cyplo/bakare
+
+secrets:
+  - b7161fff-05f4-4470-b4a1-57bd67dede23
+  - 996295b0-681c-49e8-8774-1be2f3e0bfe9
+
+environment:
+  CI: "true"
+
+tasks:
+  - test: |
+      cd bakare
+      nix-shell --pure --run "./scripts/test.sh"
+      nix-shell --pure --run "./scripts/package.sh"
+
+  - github_push: |
+      set +xv
+      cd bakare
+      GITHUB_TOKEN=`cat ~/.github_token`
+      git remote add github https://cyplo:$GITHUB_TOKEN@github.com/cyplo/bakare.git
+      nix-shell --pure --run 'git push github --all --force'
