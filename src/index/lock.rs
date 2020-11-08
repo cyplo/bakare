@@ -24,8 +24,13 @@ impl Lock {
     }
 
     pub fn release(self) -> Result<()> {
+        self.delete_lock_file()?;
+        Ok(())
+    }
+
+    fn delete_lock_file(&self) -> Result<()> {
         if self.path.exists() {
-            std::fs::remove_file(self.path)?;
+            std::fs::remove_file(&self.path)?;
         }
         Ok(())
     }
@@ -80,4 +85,31 @@ impl Lock {
     }
 }
 
-//TODO: add drop implementation
+impl Drop for Lock {
+    fn drop(&mut self) {
+        match self.delete_lock_file() {
+            _ => (),
+        }
+    }
+}
+
+#[cfg(test)]
+mod must {
+    use super::Lock;
+    use anyhow::Result;
+    use std::{fs, io};
+
+    #[test]
+    fn be_released_when_dropped() -> Result<()> {
+        let temp_dir = tempfile::tempdir()?;
+        {
+            let _lock = Lock::new(&temp_dir.path());
+        }
+        let entries = fs::read_dir(temp_dir.into_path())?
+            .map(|res| res.map(|e| e.path()))
+            .collect::<Result<Vec<_>, io::Error>>()?;
+
+        assert_eq!(entries.len(), 0);
+        Ok(())
+    }
+}
