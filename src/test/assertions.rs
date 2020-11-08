@@ -5,9 +5,8 @@ use std::path::Path;
 use tempfile::tempdir;
 use walkdir::WalkDir;
 
-use crate::repository::{ItemId, Repository};
-use crate::repository_item::RepositoryItem;
-use crate::source::TempSource;
+use super::source::TempSource;
+use crate::repository::{item::RepositoryItem, ItemId, Repository};
 use crate::{backup, restore};
 use anyhow::Result;
 

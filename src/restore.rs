@@ -1,7 +1,6 @@
 use std::path::Path;
 
-use crate::repository::Repository;
-use crate::repository_item::RepositoryItem;
+use crate::repository::{item::RepositoryItem, Repository};
 use anyhow::Result;
 use anyhow::*;
 

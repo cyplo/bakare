@@ -3,8 +3,7 @@ use tempfile::tempdir;
 use anyhow::Result;
 use bakare::backup;
 use bakare::repository::Repository;
-use bakare::source::TempSource;
-use bakare::test::assertions::*;
+use bakare::test::{assertions::*, source::TempSource};
 
 #[test]
 fn restore_multiple_files() -> Result<()> {

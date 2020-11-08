@@ -5,8 +5,8 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 
 use crate::index::item::IndexItem;
-use crate::repository::ItemId;
-use crate::{repository_item::RepositoryItem, version::Version};
+use crate::repository::{item::RepositoryItem, ItemId};
+use crate::version::Version;
 use anyhow::Result;
 use anyhow::*;
 

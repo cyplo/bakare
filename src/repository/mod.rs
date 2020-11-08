@@ -1,3 +1,5 @@
+pub mod item;
+
 use std::fmt::Formatter;
 use std::fs::File;
 use std::io::BufReader;
@@ -5,9 +7,9 @@ use std::path::{Path, PathBuf};
 use std::{fmt, fs, io};
 
 use crate::index::{Index, IndexItemIterator};
-use crate::repository_item::RepositoryItem;
 use anyhow::Result;
 use anyhow::*;
+use item::RepositoryItem;
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
 use sha2::Sha512;

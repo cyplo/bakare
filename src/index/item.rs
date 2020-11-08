@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use crate::repository::ItemId;
-use crate::{repository_item::RepositoryItem, version::Version};
+use crate::repository::{item::RepositoryItem, ItemId};
+use crate::version::Version;
 
 #[derive(Clone, Debug, PartialOrd, PartialEq, Ord, Eq, Serialize, Deserialize)]
 pub struct IndexItem {
