@@ -1,4 +1,4 @@
-# Bakare: modern, simple yet efficient backup solution
+# Bakare: modern and simple, yet efficient backup solution
 
 ## Goals for bakare:
 
