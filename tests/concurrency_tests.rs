@@ -2,12 +2,11 @@ use std::fs;
 use std::path::Path;
 
 use anyhow::Result;
-use async_log::span;
 use bakare::repository::Repository;
 use bakare::test::{assertions::*, source::TempSource};
 use bakare::{backup, restore};
 use nix::sys::wait::{waitpid, WaitStatus};
-use nix::unistd::{fork, getpid, ForkResult};
+use nix::unistd::{fork, ForkResult};
 use tempfile::tempdir;
 
 #[test]
@@ -47,34 +46,29 @@ where
 {
     let task_numbers = (0..parallel_backups_number).collect::<Vec<_>>();
     let mut child_pids = vec![];
-    span!("[{}] acquiring children for parent", getpid(), {
-        for task_number in &task_numbers {
-            match unsafe { fork() } {
-                Ok(ForkResult::Parent { child }) => {
-                    child_pids.push(child);
-                }
-                Ok(ForkResult::Child) => {
-                    backup_process(*task_number, &repository_path, files_per_backup_number)?;
-                    std::process::exit(0);
-                }
+    for task_number in &task_numbers {
+        match unsafe { fork() } {
+            Ok(ForkResult::Parent { child }) => {
+                child_pids.push(child);
+            }
+            Ok(ForkResult::Child) => {
+                backup_process(*task_number, &repository_path, files_per_backup_number)?;
+                std::process::exit(0);
+            }
 
-                Err(_) => panic!("fork failed"),
-            }
+            Err(_) => panic!("fork failed"),
         }
-    });
-    span!("[{}] waiting for {} children", getpid(), child_pids.len(), {
-        for pid in child_pids {
-            log::debug!("[{}] waiting for a child {} to exit", getpid(), pid);
-            let status = waitpid(Some(pid), None)?;
-            match status {
-                WaitStatus::Exited(pid, code) => {
-                    assert!(code == 0, "failed the wait for {} with code {}", pid, code);
-                }
-                WaitStatus::Signaled(pid, _, _) => assert!(false, "failed with signal for {}", pid),
-                _ => panic!("unknown state"),
+    }
+    for pid in child_pids {
+        let status = waitpid(Some(pid), None)?;
+        match status {
+            WaitStatus::Exited(pid, code) => {
+                assert!(code == 0, "failed the wait for {} with code {}", pid, code);
             }
+            WaitStatus::Signaled(pid, _, _) => panic!("failed with signal for {}", pid),
+            _ => panic!("unknown state"),
         }
-    });
+    }
     Ok(task_numbers)
 }
 
@@ -111,4 +105,3 @@ fn setup_logger() {
 fn file_id(i: usize, j: usize) -> String {
     format!("{}-{}", i, j)
 }
-// TODO handle stale leftover locks
