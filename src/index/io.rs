@@ -34,9 +34,9 @@ impl Index {
 
     pub fn save(&mut self) -> Result<()> {
         let lock_id = Uuid::new_v4();
-        let lock = Lock::new(&self.index_directory())?;
+        let lock = Lock::new(&self.index_directory()?)?;
         if self.index_file_path().exists() {
-            let index = Index::load_from_file(&Index::index_file_path_for_repository_path(&self.index_directory()))?;
+            let index = Index::load_from_file(&Index::index_file_path_for_repository_path(&self.index_directory()?))?;
             self.merge_items_by_file_id(index.items_by_file_id);
             self.merge_newest_items(index.newest_items_by_source_path);
             self.version = max(self.version.clone(), index.version);
@@ -52,7 +52,12 @@ impl Index {
     where
         T: AsRef<Path>,
     {
-        fs::create_dir_all(path.as_ref().parent().unwrap()).context("create index directory")?;
+        fs::create_dir_all(
+            path.as_ref()
+                .parent()
+                .ok_or(anyhow!("cannot compute parent path for {}", path.as_ref().to_string_lossy()))?,
+        )
+        .context("create index directory")?;
 
         let file = AtomicFile::new(&path, AllowOverwrite);
 
@@ -99,7 +104,14 @@ impl Index {
         path.join("index")
     }
 
-    fn index_directory(&self) -> PathBuf {
-        self.index_file_path().parent().unwrap().to_path_buf()
+    fn index_directory(&self) -> Result<PathBuf> {
+        Ok(self
+            .index_file_path()
+            .parent()
+            .ok_or(anyhow!(
+                "cannot compute parent path for {}",
+                self.index_file_path().to_string_lossy()
+            ))?
+            .to_path_buf())
     }
 }

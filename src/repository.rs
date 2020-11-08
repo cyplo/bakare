@@ -113,7 +113,10 @@ impl<'a> Repository<'a> {
         let destination_path = Path::new(&destination_path);
 
         if source_path.is_file() {
-            let parent = destination_path.parent().unwrap();
+            let parent = destination_path.parent().ok_or(anyhow!(
+                "cannot compute parent path for {}",
+                &destination_path.to_string_lossy()
+            ))?;
             fs::create_dir_all(parent)?;
             fs::copy(source_path, destination_path)?;
             let relative_path = destination_path.strip_prefix(self.path)?;
