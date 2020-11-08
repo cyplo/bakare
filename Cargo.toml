@@ -31,5 +31,5 @@ walkdir = "2.3"
 [dev-dependencies.cargo-husky]
 version = "1"
 default-features = false
-features = ["run-for-all", "prepush-hook", "run-cargo-clippy", "run-cargo-fmt"]
+features = ["run-for-all", "prepush-hook", "run-cargo-check", "run-cargo-test", "run-cargo-clippy", "run-cargo-fmt"]
 
