@@ -36,7 +36,7 @@ impl RepositoryItem {
         }
         let parent = target_path
             .parent()
-            .ok_or(anyhow!("cannot compute parent path for {}", &target_path.to_string_lossy()))?;
+            .ok_or_else(|| anyhow!("cannot compute parent path for {}", &target_path.to_string_lossy()))?;
         if !parent.exists() {
             fs::create_dir_all(parent)?;
         }

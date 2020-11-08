@@ -55,7 +55,7 @@ impl Index {
         fs::create_dir_all(
             path.as_ref()
                 .parent()
-                .ok_or(anyhow!("cannot compute parent path for {}", path.as_ref().to_string_lossy()))?,
+                .ok_or_else(|| anyhow!("cannot compute parent path for {}", path.as_ref().to_string_lossy()))?,
         )
         .context("create index directory")?;
 
@@ -108,10 +108,7 @@ impl Index {
         Ok(self
             .index_file_path()
             .parent()
-            .ok_or(anyhow!(
-                "cannot compute parent path for {}",
-                self.index_file_path().to_string_lossy()
-            ))?
+            .ok_or_else(|| anyhow!("cannot compute parent path for {}", self.index_file_path().to_string_lossy()))?
             .to_path_buf())
     }
 }

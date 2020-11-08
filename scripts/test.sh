@@ -7,6 +7,6 @@ fi
 
 cargo fmt -- --check
 cargo clippy --all-targets --all-features -- -D warnings
-cargo check
+cargo check --frozen
 cargo test
 cargo test -- --ignored
