@@ -1,15 +1,16 @@
-use std::path::{Path, PathBuf};
-use std::{fmt, fs, io};
-
-use crate::error::BakareError;
-use crate::index::{Index, IndexItemIterator};
-use crate::repository_item::RepositoryItem;
-use serde::{Deserialize, Serialize};
-use sha2::Digest;
-use sha2::Sha512;
 use std::fmt::Formatter;
 use std::fs::File;
 use std::io::BufReader;
+use std::path::{Path, PathBuf};
+use std::{fmt, fs, io};
+
+use crate::index::{Index, IndexItemIterator};
+use crate::repository_item::RepositoryItem;
+use anyhow::Result;
+use anyhow::*;
+use serde::{Deserialize, Serialize};
+use sha2::Digest;
+use sha2::Sha512;
 use walkdir::WalkDir;
 
 /// represents a place where backup is stored an can be restored from.
@@ -25,14 +26,31 @@ pub struct Repository<'a> {
 const DATA_DIR_NAME: &str = "data";
 
 #[derive(Clone, Debug, PartialOrd, PartialEq, Ord, Eq, Serialize, Deserialize, Hash)]
-pub struct ItemId(Box<[u8]>);
-
-#[derive(Clone, Debug, PartialOrd, PartialEq, Ord, Eq, Serialize, Deserialize, Hash)]
-pub struct Version(u128);
+pub struct ItemId(#[serde(with = "base64")] Vec<u8>);
 
 pub struct RepositoryItemIterator<'a> {
     iterator: IndexItemIterator<'a>,
     index: &'a Index,
+}
+
+mod base64 {
+    use ::base64;
+    use serde::{de, Deserialize, Deserializer, Serializer};
+
+    pub fn serialize<S>(bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&base64::encode(bytes))
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = <&str>::deserialize(deserializer)?;
+        base64::decode(s).map_err(de::Error::custom)
+    }
 }
 
 impl<'a> Iterator for RepositoryItemIterator<'a> {
@@ -40,18 +58,6 @@ impl<'a> Iterator for RepositoryItemIterator<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iterator.next().map(|i| self.index.repository_item(&i))
-    }
-}
-
-impl Version {
-    pub fn next(&self) -> Self {
-        Version(self.0 + 1)
-    }
-}
-
-impl Default for Version {
-    fn default() -> Self {
-        Version(1)
     }
 }
 
@@ -63,7 +69,7 @@ impl AsRef<[u8]> for ItemId {
 
 impl From<&[u8]> for ItemId {
     fn from(a: &[u8]) -> Self {
-        ItemId(Box::from(a))
+        ItemId(a.into())
     }
 }
 
@@ -74,15 +80,15 @@ impl fmt::Display for ItemId {
 }
 
 impl<'a> Repository<'a> {
-    pub fn init(path: &Path) -> Result<(), BakareError> {
-        let index = Index::new(path);
+    pub fn init(path: &Path) -> Result<()> {
+        let mut index = Index::new(path);
         index.save()?;
         Ok(())
     }
 
-    pub fn open(path: &Path) -> Result<Repository, BakareError> {
+    pub fn open(path: &Path) -> Result<Repository> {
         if !path.is_absolute() {
-            return Err(BakareError::RepositoryPathNotAbsolute);
+            return Err(anyhow!("path to repository not absolute"));
         }
 
         let index = Index::load(path)?;
@@ -93,9 +99,13 @@ impl<'a> Repository<'a> {
         &self.path
     }
 
-    pub fn store(&mut self, source_path: &Path) -> Result<(), BakareError> {
+    pub fn save_index(&mut self) -> Result<()> {
+        self.index.save()
+    }
+
+    pub fn store(&mut self, source_path: &Path) -> Result<()> {
         if !source_path.is_absolute() {
-            return Err(BakareError::PathToStoreNotAbsolute);
+            return Err(anyhow!("path to store not absolute"));
         }
         let id = Repository::calculate_id(source_path)?;
         let destination_path = self.data_dir();
@@ -103,23 +113,23 @@ impl<'a> Repository<'a> {
         let destination_path = Path::new(&destination_path);
 
         if source_path.is_file() {
-            fs::create_dir_all(destination_path.parent().unwrap())?;
+            let parent = destination_path.parent().unwrap();
+            fs::create_dir_all(parent)?;
             fs::copy(source_path, destination_path)?;
             let relative_path = destination_path.strip_prefix(self.path)?;
             self.index.remember(source_path, relative_path, id);
-            self.index.save()?;
         }
         Ok(())
     }
 
-    pub fn newest_item_by_source_path(&self, path: &Path) -> Result<Option<RepositoryItem>, BakareError> {
+    pub fn newest_item_by_source_path(&self, path: &Path) -> Result<Option<RepositoryItem>> {
         Ok(self
             .index
             .newest_item_by_source_path(path)?
             .map(|i| self.index.repository_item(&i)))
     }
 
-    pub fn item_by_id(&self, id: &ItemId) -> Result<Option<RepositoryItem>, BakareError> {
+    pub fn item_by_id(&self, id: &ItemId) -> Result<Option<RepositoryItem>> {
         self.index.item_by_id(id).map(|i| i.map(|i| self.index.repository_item(&i)))
     }
 
@@ -130,7 +140,7 @@ impl<'a> Repository<'a> {
         }
     }
 
-    pub fn data_weight(&self) -> Result<u64, BakareError> {
+    pub fn data_weight(&self) -> Result<u64> {
         let total_size = WalkDir::new(self.data_dir())
             .into_iter()
             .filter_map(|entry| entry.ok())
@@ -144,7 +154,7 @@ impl<'a> Repository<'a> {
         self.path().join(DATA_DIR_NAME)
     }
 
-    fn calculate_id(source_path: &Path) -> Result<ItemId, BakareError> {
+    fn calculate_id(source_path: &Path) -> Result<ItemId> {
         let source_file = File::open(source_path)?;
         let mut reader = BufReader::new(source_file);
         let mut hasher = Sha512::new();

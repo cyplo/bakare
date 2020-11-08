@@ -1,5 +1,6 @@
-use crate::error::BakareError;
-use crate::repository::{ItemId, Version};
+use crate::{repository::ItemId, version::Version};
+use anyhow::Result;
+use anyhow::*;
 use std::fmt::{Display, Formatter};
 use std::path::Path;
 use std::{fmt, fs};
@@ -24,23 +25,22 @@ impl RepositoryItem {
         }
     }
 
-    pub fn save(&self, save_to: &Path) -> Result<(), BakareError> {
+    pub fn save(&self, save_to: &Path) -> Result<()> {
         if !save_to.is_absolute() {
-            return Err(BakareError::PathToStoreNotAbsolute);
+            return Err(anyhow!("path to store not absolute"));
         }
 
         let target_path = save_to.join(&self.original_source_path.strip_prefix("/")?);
         if !target_path.is_absolute() {
-            return Err(BakareError::PathToStoreNotAbsolute);
+            return Err(anyhow!("path to store not absolute"));
         }
         let parent = target_path.parent().unwrap();
         if !parent.exists() {
             fs::create_dir_all(parent)?;
         }
         if !self.absolute_path.exists() {
-            return Err(BakareError::CorruptedRepoNoFile);
+            return Err(anyhow!("corrupted repository"));
         }
-        println!("restoring {} to {}", &self.absolute_path.display(), &target_path.display());
         fs::copy(&self.absolute_path, &target_path)?;
 
         Ok(())

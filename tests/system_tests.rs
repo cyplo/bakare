@@ -1,27 +1,27 @@
 use tempfile::tempdir;
 
+use anyhow::Result;
 use bakare::backup;
-use bakare::error::BakareError;
 use bakare::repository::Repository;
 use bakare::source::TempSource;
 use bakare::test::assertions::*;
 
 #[test]
-fn restore_multiple_files() -> Result<(), BakareError> {
-    let source = TempSource::new()?;
+fn restore_multiple_files() -> Result<()> {
+    let source = TempSource::new().unwrap();
 
-    source.write_text_to_file("first", "some contents")?;
-    source.write_text_to_file("second", "some contents")?;
-    source.write_text_to_file("third", "some other contents")?;
+    source.write_text_to_file("first", "some contents").unwrap();
+    source.write_text_to_file("second", "some contents").unwrap();
+    source.write_text_to_file("third", "some other contents").unwrap();
 
     assert_same_after_restore(source.path())
 }
 
 #[test]
-fn restore_files_after_reopening_repository() -> Result<(), BakareError> {
-    let source = TempSource::new()?;
-    let repository_path = &tempdir()?.into_path();
-    let restore_target = tempdir()?.into_path();
+fn restore_files_after_reopening_repository() -> Result<()> {
+    let source = TempSource::new().unwrap();
+    let repository_path = &tempdir().unwrap().into_path();
+    let restore_target = tempdir().unwrap().into_path();
     Repository::init(repository_path)?;
 
     let source_file_relative_path = "some file path";
@@ -36,9 +36,9 @@ fn restore_files_after_reopening_repository() -> Result<(), BakareError> {
 }
 
 #[test]
-fn restore_older_version_of_file() -> Result<(), BakareError> {
-    let source = TempSource::new()?;
-    let repository_path = tempdir()?.into_path();
+fn restore_older_version_of_file() -> Result<()> {
+    let source = TempSource::new().unwrap();
+    let repository_path = tempdir().unwrap().into_path();
     Repository::init(repository_path.as_path())?;
 
     let source_file_relative_path = "some path";
@@ -57,9 +57,9 @@ fn restore_older_version_of_file() -> Result<(), BakareError> {
 }
 
 #[test]
-fn newer_version_should_be_greater_than_earlier_version() -> Result<(), BakareError> {
-    let source = TempSource::new()?;
-    let repository_path = tempdir()?.into_path();
+fn newer_version_should_be_greater_than_earlier_version() -> Result<()> {
+    let source = TempSource::new().unwrap();
+    let repository_path = tempdir().unwrap().into_path();
     Repository::init(repository_path.as_path())?;
 
     let source_file_relative_path = "some path";
@@ -81,9 +81,9 @@ fn newer_version_should_be_greater_than_earlier_version() -> Result<(), BakareEr
 }
 
 #[test]
-fn store_duplicated_files_just_once() -> Result<(), BakareError> {
-    let source = TempSource::new()?;
-    let repository_path = &tempdir()?.into_path();
+fn store_duplicated_files_just_once() -> Result<()> {
+    let source = TempSource::new().unwrap();
+    let repository_path = &tempdir().unwrap().into_path();
     Repository::init(repository_path)?;
     assert_eq!(data_weight(&repository_path)?, 0);
 
@@ -103,9 +103,9 @@ fn store_duplicated_files_just_once() -> Result<(), BakareError> {
 }
 
 #[test]
-fn restore_latest_version_by_default() -> Result<(), BakareError> {
-    let source = TempSource::new()?;
-    let repository_path = &tempdir()?.into_path();
+fn restore_latest_version_by_default() -> Result<()> {
+    let source = TempSource::new().unwrap();
+    let repository_path = &tempdir().unwrap().into_path();
     Repository::init(repository_path)?;
 
     let source_file_relative_path = "some path";
@@ -118,16 +118,14 @@ fn restore_latest_version_by_default() -> Result<(), BakareError> {
 }
 
 #[test]
-fn forbid_backup_of_paths_within_repository() -> Result<(), BakareError> {
-    let repository_path = &tempdir()?.into_path();
+fn forbid_backup_of_paths_within_repository() -> Result<()> {
+    let repository_path = &tempdir().unwrap().into_path();
     Repository::init(repository_path)?;
     let mut repository = Repository::open(repository_path)?;
-    let error = backup::Engine::new(repository_path, &mut repository).err().unwrap();
-    let correct_error = matches!(error, BakareError::SourceSameAsRepository);
-    assert!(correct_error);
+    let error = backup::Engine::new(repository_path, &mut repository);
+    assert!(error.is_err());
     Ok(())
 }
-
-// TODO: test concurrent writes
 // TODO: index corruption
 // TODO: encryption
+// TODO: resume from sleep while backup in progress

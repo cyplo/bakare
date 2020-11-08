@@ -5,10 +5,14 @@ let
 in
   with nixpkgs;
   stdenv.mkDerivation {
-    name = "genpass_shell";
+    name = "bakare_shell";
     buildInputs = [
       channel.rust
       cacert openssl openssh zlib
-      llvm pkgconfig git
+      pkgconfig clang llvm
+      git
     ];
+    shellHook = ''
+      export RUST_SRC_PATH="${channel.rust-src}/lib/rustlib/src/rust/src"
+    '';
   }
