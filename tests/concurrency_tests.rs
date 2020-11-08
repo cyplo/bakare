@@ -96,10 +96,7 @@ fn restore_all<T: AsRef<Path>>(repository_path: T) -> Result<Vec<Box<Path>>> {
 }
 
 fn setup_logger() {
-    let logger = femme::pretty::Logger::new();
-    async_log::Logger::wrap(logger, rand::random::<u64>)
-        .start(log::LevelFilter::Trace)
-        .unwrap();
+    femme::with_level(log::LevelFilter::Trace);
 }
 
 fn file_id(i: usize, j: usize) -> String {
