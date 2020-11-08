@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
-#[derive(Clone, Debug, PartialOrd, PartialEq, Ord, Eq, Serialize, Deserialize, Hash)]
+#[derive(Copy, Clone, Debug, PartialOrd, PartialEq, Ord, Eq, Serialize, Deserialize, Hash)]
 pub struct Version(u128);
 
 impl Version {

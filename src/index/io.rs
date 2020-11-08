@@ -39,7 +39,7 @@ impl Index {
             let index = Index::load_from_file(&Index::index_file_path_for_repository_path(&self.index_directory()?))?;
             self.merge_items_by_file_id(index.items_by_file_id);
             self.merge_newest_items(index.newest_items_by_source_path);
-            self.version = max(self.version.clone(), index.version);
+            self.version = max(self.version, index.version);
         }
         self.version = self.version.next();
         self.write_index_to_file(self.index_file_path())?;
@@ -110,5 +110,26 @@ impl Index {
             .parent()
             .ok_or_else(|| anyhow!("cannot compute parent path for {}", self.index_file_path().to_string_lossy()))?
             .to_path_buf())
+    }
+}
+
+#[cfg(test)]
+mod must {
+    use crate::index::Index;
+    use anyhow::Result;
+
+    #[test]
+    fn have_version_increased_when_saved() -> Result<()> {
+        let temp_dir = tempfile::tempdir()?;
+        let mut index = Index::new(&temp_dir.into_path());
+        let old_version = index.version;
+
+        index.save()?;
+
+        let new_version = index.version;
+
+        assert!(new_version > old_version);
+
+        Ok(())
     }
 }
