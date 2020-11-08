@@ -87,9 +87,7 @@ impl Lock {
 
 impl Drop for Lock {
     fn drop(&mut self) {
-        match self.delete_lock_file() {
-            _ => (),
-        }
+        let _ = self.delete_lock_file();
     }
 }
 
