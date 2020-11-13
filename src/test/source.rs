@@ -16,9 +16,13 @@ impl TempSource {
         Ok(Self { directory: tempdir()? })
     }
 
-    pub fn write_text_to_file(&self, filename: &str, text: &str) -> Result<(), Error> {
+    pub fn write_bytes_to_file(&self, filename: &str, bytes: &[u8]) -> Result<(), Error> {
         let path = self.file_path(filename);
-        Ok(File::create(path)?.write_all(text.as_bytes())?)
+        Ok(File::create(path)?.write_all(bytes)?)
+    }
+
+    pub fn write_text_to_file(&self, filename: &str, text: &str) -> Result<(), Error> {
+        self.write_bytes_to_file(filename, text.as_bytes())
     }
 
     pub fn path(&self) -> &Path {
