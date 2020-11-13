@@ -14,7 +14,7 @@ pub struct Lock {
 }
 
 impl Lock {
-    pub fn new(index_directory: &Path) -> Result<Self> {
+    pub fn lock(index_directory: &Path) -> Result<Self> {
         let mut buffer = [0u8; 16];
         OsRng.fill_bytes(&mut buffer);
         let id = Uuid::from_bytes(buffer);
@@ -101,7 +101,7 @@ mod must {
     fn be_released_when_dropped() -> Result<()> {
         let temp_dir = tempfile::tempdir()?;
         {
-            let _lock = Lock::new(&temp_dir.path());
+            let _lock = Lock::lock(&temp_dir.path());
         }
         let entries = fs::read_dir(temp_dir.into_path())?
             .map(|res| res.map(|e| e.path()))

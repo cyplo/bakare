@@ -20,7 +20,7 @@ impl Index {
             let mut index = Index::new(repository_path);
             index.save()?;
         }
-        let lock = Lock::new(repository_path)?;
+        let lock = Lock::lock(repository_path)?;
         let index = Index::load_from_file(&Index::index_file_path_for_repository_path(repository_path))?;
         lock.release()?;
         log::debug!(
@@ -34,7 +34,7 @@ impl Index {
 
     pub fn save(&mut self) -> Result<()> {
         let lock_id = Uuid::new_v4();
-        let lock = Lock::new(&self.index_directory()?)?;
+        let lock = Lock::lock(&self.index_directory()?)?;
         if self.index_file_path().exists() {
             let index = Index::load_from_file(&Index::index_file_path_for_repository_path(&self.index_directory()?))?;
             self.merge_items_by_file_id(index.items_by_file_id);
