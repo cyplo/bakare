@@ -96,7 +96,7 @@ fn restore_all<T: AsRef<Path>>(repository_path: T) -> Result<Vec<Box<Path>>> {
 }
 
 fn setup_logger() {
-    femme::with_level(log::LevelFilter::Trace);
+    femme::with_level(log::LevelFilter::Info);
 }
 
 fn file_id(i: usize, j: usize) -> String {
