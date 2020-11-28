@@ -3,7 +3,7 @@ use std::path::Path;
 
 use anyhow::Result;
 use bakare::repository::Repository;
-use bakare::test::{assertions::*, source::TempSource};
+use bakare::test::{assertions::*, source::TestSource};
 use bakare::{backup, restore};
 use nix::sys::wait::{waitpid, WaitStatus};
 use nix::unistd::{fork, ForkResult};
@@ -77,7 +77,7 @@ where
     T: AsRef<Path> + Sync,
 {
     let mut repository = Repository::open(repository_path.as_ref())?;
-    let source = TempSource::new().unwrap();
+    let source = TestSource::new().unwrap();
     let mut backup_engine = backup::Engine::new(source.path(), &mut repository)?;
     for i in 0..files_per_backup_number {
         let id = file_id(task_number, i);

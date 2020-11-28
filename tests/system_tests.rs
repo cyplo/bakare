@@ -3,13 +3,13 @@ use tempfile::tempdir;
 use anyhow::Result;
 use bakare::backup;
 use bakare::repository::Repository;
-use bakare::test::{assertions::*, source::TempSource};
+use bakare::test::{assertions::*, source::TestSource};
 
 use proptest::prelude::*;
 
 #[test]
 fn restore_multiple_files() -> Result<()> {
-    let source = TempSource::new().unwrap();
+    let source = TestSource::new().unwrap();
 
     source.write_text_to_file("first", "some contents").unwrap();
     source.write_text_to_file("second", "some contents").unwrap();
@@ -20,7 +20,7 @@ fn restore_multiple_files() -> Result<()> {
 
 #[test]
 fn restore_files_after_reopening_repository() -> Result<()> {
-    let source = TempSource::new().unwrap();
+    let source = TestSource::new().unwrap();
     let repository_path = &tempdir().unwrap().into_path();
     let restore_target = tempdir().unwrap().into_path();
     Repository::init(repository_path)?;
@@ -38,7 +38,7 @@ fn restore_files_after_reopening_repository() -> Result<()> {
 
 #[test]
 fn restore_older_version_of_file() -> Result<()> {
-    let source = TempSource::new().unwrap();
+    let source = TestSource::new().unwrap();
     let repository_path = tempdir().unwrap().into_path();
     Repository::init(repository_path.as_path())?;
 
@@ -59,7 +59,7 @@ fn restore_older_version_of_file() -> Result<()> {
 
 #[test]
 fn newer_version_should_be_greater_than_earlier_version() -> Result<()> {
-    let source = TempSource::new().unwrap();
+    let source = TestSource::new().unwrap();
     let repository_path = tempdir().unwrap().into_path();
     Repository::init(repository_path.as_path())?;
 
@@ -84,7 +84,7 @@ fn newer_version_should_be_greater_than_earlier_version() -> Result<()> {
 proptest! {
     #[test]
     fn store_duplicated_files_just_once(contents in any::<[u8;3]>()) {
-        let source = TempSource::new().unwrap();
+        let source = TestSource::new().unwrap();
         let repository_path = &tempdir().unwrap().into_path();
         Repository::init(repository_path).unwrap();
         assert_eq!(data_weight(&repository_path).unwrap(), 0);
@@ -104,7 +104,7 @@ proptest! {
 
 #[test]
 fn restore_latest_version_by_default() -> Result<()> {
-    let source = TempSource::new().unwrap();
+    let source = TestSource::new().unwrap();
     let repository_path = &tempdir().unwrap().into_path();
     Repository::init(repository_path)?;
 

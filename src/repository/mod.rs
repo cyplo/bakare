@@ -172,7 +172,7 @@ impl<'a> Repository<'a> {
 #[cfg(test)]
 mod must {
     use super::Repository;
-    use crate::test::source::TempSource;
+    use crate::test::source::TestSource;
     use proptest::prelude::*;
     use tempfile::tempdir;
 
@@ -180,7 +180,7 @@ mod must {
 
         #[test]
         fn have_size_equal_to_sum_of_sizes_of_backed_up_files(file_size1 in 0u64..128, file_size2 in 0u64..128) {
-            let source = TempSource::new().unwrap();
+            let source = TestSource::new().unwrap();
             let repository_path = tempdir().unwrap().into_path();
             Repository::init(&repository_path).unwrap();
 

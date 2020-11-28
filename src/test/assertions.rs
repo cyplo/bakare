@@ -5,7 +5,7 @@ use std::path::Path;
 use tempfile::tempdir;
 use walkdir::WalkDir;
 
-use super::source::TempSource;
+use super::source::TestSource;
 use crate::repository::{item::RepositoryItem, ItemId, Repository};
 use crate::{backup, restore};
 use anyhow::Result;
@@ -89,7 +89,7 @@ pub fn restore_all_from_reloaded_repository(repository_path: &Path, restore_targ
 }
 
 pub fn backup_file_with_text_contents(
-    source: &TempSource,
+    source: &TestSource,
     repository_path: &Path,
     source_file_relative_path: &str,
     contents: &str,
@@ -100,7 +100,7 @@ pub fn backup_file_with_text_contents(
 }
 
 pub fn backup_file_with_byte_contents(
-    source: &TempSource,
+    source: &TestSource,
     repository_path: &Path,
     source_file_relative_path: &str,
     contents: &[u8],
