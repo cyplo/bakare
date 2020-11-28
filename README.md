@@ -2,13 +2,15 @@
 
 ## Goals for bakare:
 
+- [x] simple deduplication of file data - don't store the same exact file data twice
+- [ ] advanced deduplication - store files that only changed slightly more efficiently
+- [ ] survive index corruption
 - fast
 - using max bandwidth
 - use max cpu
 - use max disk I/O
 - memory usage limit
 - encryption by default - asymmetric, creates a keypair for you
-- deduplication of file data
 - fuzzy find by file name in stored files
 - failure to process one file should not affect any other files
 - intermittent network failures should not make the whole process fail (test with random packet drop)
