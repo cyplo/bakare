@@ -173,31 +173,26 @@ impl<'a> Repository<'a> {
 mod must {
     use super::Repository;
     use crate::test::source::TempSource;
-    use anyhow::Result;
+    use proptest::prelude::*;
     use tempfile::tempdir;
 
-    #[test]
-    fn have_size_equal_to_sum_of_sizes_of_backed_up_files() -> Result<()> {
-        let source = TempSource::new().unwrap();
-        let repository_path = tempdir().unwrap().into_path();
-        Repository::init(&repository_path)?;
+    proptest! {
 
-        let file_size1 = 13;
-        let file_size2 = 27;
+        #[test]
+        fn have_size_equal_to_sum_of_sizes_of_backed_up_files(file_size1 in 0u64..128, file_size2 in 0u64..128) {
+            let source = TempSource::new().unwrap();
+            let repository_path = tempdir().unwrap().into_path();
+            Repository::init(&repository_path).unwrap();
 
-        let mut backup_repository = Repository::open(&repository_path)?;
-        source.write_random_bytes_to_file("file1", file_size1)?;
-        backup_repository.store(&source.file_path("file1"))?;
+            let mut backup_repository = Repository::open(&repository_path).unwrap();
+            source.write_random_bytes_to_file("file1", file_size1)?;
+            backup_repository.store(&source.file_path("file1")).unwrap();
 
-        source.write_random_bytes_to_file("file2", file_size2)?;
-        backup_repository.store(&source.file_path("file2"))?;
+            source.write_random_bytes_to_file("file2", file_size2)?;
+            backup_repository.store(&source.file_path("file2")).unwrap();
 
-        assert_eq!((file_size1 + file_size2) as u64, backup_repository.data_weight()?);
+            assert_eq!(file_size1 + file_size2, backup_repository.data_weight().unwrap());
+        }
 
-        backup_repository.save_index()?;
-
-        assert_eq!((file_size1 + file_size2) as u64, backup_repository.data_weight()?);
-
-        Ok(())
     }
 }
