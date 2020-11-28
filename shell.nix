@@ -8,6 +8,7 @@ in
     name = "bakare_shell";
     buildInputs = [
       channel.rust
+      linuxPackages.perf flamegraph cargo-flamegraph geeqie
       cacert openssl openssh zlib
       pkgconfig clang llvm
       git

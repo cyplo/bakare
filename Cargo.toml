@@ -35,3 +35,5 @@ version = "1"
 default-features = false
 features = ["run-for-all", "prepush-hook", "run-cargo-check", "run-cargo-test", "run-cargo-clippy", "run-cargo-fmt"]
 
+[profile.release]
+debug = 1
