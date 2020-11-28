@@ -33,7 +33,17 @@ pub fn assert_same_after_restore(source_path: &Path) -> Result<()> {
     Ok(())
 }
 
-pub fn assert_restored_file_contents(repository_path: &Path, source_file_full_path: &Path, contents: &str) -> Result<()> {
+pub fn assert_restored_file_contents(repository_path: &Path, source_file_full_path: &Path, contents: &[u8]) -> Result<()> {
+    let mut restore_repository = Repository::open(repository_path)?;
+    let item = restore_repository.newest_item_by_source_path(&source_file_full_path)?;
+    let restore_target = tempdir().unwrap();
+    let restore_engine = restore::Engine::new(&mut restore_repository, &restore_target.path())?;
+
+    restore_engine.restore(&item.unwrap())?;
+    let restored_file_path = restore_target.path().join(source_file_full_path.strip_prefix("/")?);
+    assert_target_file_contents(&restored_file_path, contents)
+}
+pub fn assert_restored_file_byte_contents(repository_path: &Path, source_file_full_path: &Path, contents: &[u8]) -> Result<()> {
     let mut restore_repository = Repository::open(repository_path)?;
     let item = restore_repository.newest_item_by_source_path(&source_file_full_path)?;
     let restore_target = tempdir().unwrap();
@@ -47,7 +57,7 @@ pub fn assert_restored_file_contents(repository_path: &Path, source_file_full_pa
 pub fn assert_restored_from_version_has_contents(
     repository_path: &Path,
     source_file_full_path: &Path,
-    old_contents: &str,
+    old_contents: &[u8],
     old_id: &ItemId,
 ) -> Result<()> {
     let mut restore_repository = Repository::open(repository_path)?;
@@ -78,16 +88,27 @@ pub fn restore_all_from_reloaded_repository(repository_path: &Path, restore_targ
     }
 }
 
-pub fn backup_file_with_contents(
+pub fn backup_file_with_text_contents(
     source: &TempSource,
     repository_path: &Path,
     source_file_relative_path: &str,
     contents: &str,
 ) -> Result<()> {
     {
+        backup_file_with_byte_contents(source, repository_path, source_file_relative_path, contents.as_bytes())
+    }
+}
+
+pub fn backup_file_with_byte_contents(
+    source: &TempSource,
+    repository_path: &Path,
+    source_file_relative_path: &str,
+    contents: &[u8],
+) -> Result<()> {
+    {
         let mut backup_repository = Repository::open(repository_path)?;
         let mut backup_engine = backup::Engine::new(source.path(), &mut backup_repository)?;
-        source.write_text_to_file(source_file_relative_path, contents).unwrap();
+        source.write_bytes_to_file(source_file_relative_path, contents).unwrap();
         backup_engine.backup()?;
         Ok(())
     }
@@ -136,13 +157,10 @@ pub fn get_sorted_files_recursively<T: AsRef<Path>>(path: T) -> Result<Vec<Box<P
     Ok(result)
 }
 
-fn assert_target_file_contents(restored_path: &Path, expected_contents: &str) -> Result<()> {
-    let mut actual_contents = String::new();
+fn assert_target_file_contents(restored_path: &Path, expected_contents: &[u8]) -> Result<()> {
+    let mut actual_contents = vec![];
     assert!(restored_path.exists(), "Expected '{}' to be there", restored_path.display());
-    File::open(restored_path)
-        .unwrap()
-        .read_to_string(&mut actual_contents)
-        .unwrap();
+    File::open(restored_path)?.read_to_end(&mut actual_contents)?;
     assert_eq!(expected_contents, actual_contents);
     Ok(())
 }

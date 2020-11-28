@@ -27,6 +27,9 @@ thiserror = "1.0"
 uuid = { version = "0.8", features = ["v4"] }
 walkdir = "2.3"
 
+[dev-dependencies]
+proptest = "0.10"
+
 [dev-dependencies.cargo-husky]
 version = "1"
 default-features = false

@@ -25,6 +25,12 @@ impl TempSource {
         self.write_bytes_to_file(filename, text.as_bytes())
     }
 
+    pub fn write_random_bytes_to_file(&self, filename: &str, size: usize) -> Result<(), Error> {
+        let random_bytes: Vec<u8> = (0..size).map(|_| rand::random::<u8>()).collect();
+        self.write_bytes_to_file(filename, &random_bytes)?;
+        Ok(())
+    }
+
     pub fn path(&self) -> &Path {
         self.directory.path()
     }

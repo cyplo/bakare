@@ -168,3 +168,36 @@ impl<'a> Repository<'a> {
         Ok(hasher.finalize()[..].into())
     }
 }
+
+#[cfg(test)]
+mod must {
+    use super::Repository;
+    use crate::test::source::TempSource;
+    use anyhow::Result;
+    use tempfile::tempdir;
+
+    #[test]
+    fn have_size_equal_to_sum_of_sizes_of_backed_up_files() -> Result<()> {
+        let source = TempSource::new().unwrap();
+        let repository_path = tempdir().unwrap().into_path();
+        Repository::init(&repository_path)?;
+
+        let file_size1 = 13;
+        let file_size2 = 27;
+
+        let mut backup_repository = Repository::open(&repository_path)?;
+        source.write_random_bytes_to_file("file1", file_size1)?;
+        backup_repository.store(&source.file_path("file1"))?;
+
+        source.write_random_bytes_to_file("file2", file_size2)?;
+        backup_repository.store(&source.file_path("file2"))?;
+
+        assert_eq!((file_size1 + file_size2) as u64, backup_repository.data_weight()?);
+
+        backup_repository.save_index()?;
+
+        assert_eq!((file_size1 + file_size2) as u64, backup_repository.data_weight()?);
+
+        Ok(())
+    }
+}
