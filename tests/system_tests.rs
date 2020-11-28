@@ -114,7 +114,7 @@ fn restore_latest_version_by_default() -> Result<()> {
     backup_file_with_text_contents(&source, &repository_path, source_file_relative_path, "newest contents")?;
 
     let source_file_full_path = &source.file_path(source_file_relative_path);
-    assert_restored_file_contents(repository_path, source_file_full_path, "newest contents".as_bytes())
+    assert_restored_file_contents(repository_path, source_file_full_path, b"newest contents")
 }
 
 #[test]
