@@ -9,6 +9,7 @@ in
     buildInputs = [
       channel.rust
       linuxPackages.perf flamegraph cargo-flamegraph geeqie
+      cargo-edit
       cacert openssl openssh zlib
       pkgconfig clang llvm
       git
