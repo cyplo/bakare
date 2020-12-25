@@ -1,24 +1,20 @@
-use std::path::Path;
-
 use crate::repository::{item::RepositoryItem, Repository};
 use anyhow::Result;
-use anyhow::*;
+use vfs::VfsPath;
 
 pub struct Engine<'a> {
     repository: &'a mut Repository,
-    target_path: &'a Path,
+    target_path: &'a VfsPath,
 }
 
 impl<'a> Engine<'a> {
-    pub fn new(repository: &'a mut Repository, target_path: &'a Path) -> Result<Self> {
-        if !target_path.is_absolute() {
-            return Err(anyhow!("path to store not absolute"));
-        }
+    pub fn new(repository: &'a mut Repository, target_path: &'a VfsPath) -> Result<Self> {
         Ok(Engine { repository, target_path })
     }
 
     pub fn restore_all(&mut self) -> Result<()> {
-        for item in self.repository.newest_items() {
+        let newest_items = self.repository.newest_items();
+        for item in newest_items {
             self.restore(&item)?;
         }
         self.repository.save_index()?;

@@ -1,58 +1,67 @@
 use crate::{repository::ItemId, version::Version};
 use anyhow::Result;
 use anyhow::*;
+use nix::unistd::getpid;
+use std::fmt;
 use std::fmt::{Display, Formatter};
 use std::path::Path;
-use std::{fmt, fs};
+use vfs::VfsPath;
 
-#[derive(Clone, Debug, PartialOrd, PartialEq, Ord, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RepositoryItem {
-    relative_path: Box<Path>,
-    absolute_path: Box<Path>,
-    original_source_path: Box<Path>,
+    relative_path: String,
+    absolute_path: VfsPath,
+    original_source_path: String,
     id: ItemId,
     version: Version,
 }
 
+impl PartialOrd for RepositoryItem {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.id.partial_cmp(&other.id)
+    }
+}
+
 impl RepositoryItem {
-    pub fn from(original_source_path: &Path, absolute_path: &Path, relative_path: &Path, id: ItemId, version: Version) -> Self {
+    pub fn from(
+        original_source_path: &str,
+        absolute_path: &VfsPath,
+        relative_path: &str,
+        id: ItemId,
+        version: Version,
+    ) -> Self {
         RepositoryItem {
-            relative_path: Box::from(relative_path),
-            absolute_path: Box::from(absolute_path),
-            original_source_path: Box::from(original_source_path),
+            relative_path: relative_path.to_string(),
+            absolute_path: absolute_path.clone(),
+            original_source_path: original_source_path.to_string(),
             id,
             version,
         }
     }
 
-    pub fn save(&self, save_to: &Path) -> Result<()> {
-        if !save_to.is_absolute() {
-            return Err(anyhow!("path to store not absolute"));
-        }
-
-        let target_path = save_to.join(&self.original_source_path.strip_prefix("/")?);
-        if !target_path.is_absolute() {
-            return Err(anyhow!("path to store not absolute"));
-        }
+    pub fn save(&self, save_to: &VfsPath) -> Result<()> {
+        let original_source_path = Path::new(self.original_source_path());
+        let source_path_relative = original_source_path.strip_prefix("/")?;
+        let source_path_relative = source_path_relative.to_string_lossy();
+        let target_path = save_to.join(&source_path_relative)?;
         let parent = target_path
             .parent()
-            .ok_or_else(|| anyhow!("cannot compute parent path for {}", &target_path.to_string_lossy()))?;
-        if !parent.exists() {
-            fs::create_dir_all(parent)?;
-        }
+            .ok_or_else(|| anyhow!("cannot compute parent path for {}", &target_path.as_str()))?;
+        log::debug!("[{}] saving data to {}", getpid(), target_path.as_str());
+        parent.create_dir_all()?;
         if !self.absolute_path.exists() {
             return Err(anyhow!("corrupted repository"));
         }
-        fs::copy(&self.absolute_path, &target_path)?;
+        self.absolute_path.copy_file(&target_path)?;
 
         Ok(())
     }
 
-    pub fn relative_path(&self) -> &Path {
+    pub fn relative_path(&self) -> &str {
         &self.relative_path
     }
 
-    pub fn original_source_path(&self) -> &Path {
+    pub fn original_source_path(&self) -> &str {
         &self.original_source_path
     }
 
@@ -67,11 +76,6 @@ impl RepositoryItem {
 
 impl Display for RepositoryItem {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(
-            f,
-            "'{}' : {}",
-            self.original_source_path().to_string_lossy(),
-            hex::encode(self.id())
-        )
+        write!(f, "'{}' : {}", self.original_source_path(), hex::encode(self.id()))
     }
 }

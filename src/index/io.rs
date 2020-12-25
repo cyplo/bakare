@@ -1,7 +1,5 @@
-use atomicwrites::{AllowOverwrite, AtomicFile};
 use std::collections::HashMap;
-use std::fs;
-use std::path::{Path, PathBuf};
+use vfs::VfsPath;
 
 use uuid::Uuid;
 
@@ -15,69 +13,80 @@ use nix::unistd::getpid;
 use std::{cmp::max, io::Write};
 
 impl Index {
-    pub fn load<T: AsRef<Path>>(repository_path: T) -> Result<Self> {
-        let repository_path = repository_path.as_ref();
+    pub fn load(repository_path: &VfsPath) -> Result<Self> {
         if !repository_path.exists() {
-            let mut index = Index::new(repository_path);
-            index.save()?;
+            let mut index = Index::new()?;
+            index.save(repository_path)?;
         }
         let lock = Lock::lock(repository_path)?;
-        let index = Index::load_from_file(&Index::index_file_path_for_repository_path(repository_path))?;
+        let index_file_path = &Index::index_file_path_for_repository_path(repository_path)?;
+        let index = Index::load_from_file(index_file_path)?;
         lock.release()?;
         log::debug!(
-            "[{}] loaded index from {}, version: {}",
+            "[{}] loaded index from {}, version: {}; {} items",
             getpid(),
-            repository_path.to_string_lossy(),
-            index.version
+            index_file_path.as_str(),
+            index.version,
+            index.newest_items_by_source_path.len()
         );
         Ok(index)
     }
 
-    pub fn save(&mut self) -> Result<()> {
+    pub fn save(&mut self, repository_path: &VfsPath) -> Result<()> {
         let lock_id = Uuid::new_v4();
-        let lock = Lock::lock(&self.index_directory()?)?;
-        if self.index_file_path().exists() {
-            let index = Index::load_from_file(&Index::index_file_path_for_repository_path(&self.index_directory()?))?;
+        let lock = Lock::lock(repository_path)?;
+
+        let index_file_path = &Index::index_file_path_for_repository_path(repository_path)?;
+        if index_file_path.exists() {
+            let index = Index::load_from_file(&Index::index_file_path_for_repository_path(repository_path)?)?;
             self.merge_items_by_file_id(index.items_by_file_id);
             self.merge_newest_items(index.newest_items_by_source_path);
             self.version = max(self.version, index.version);
         }
         self.version = self.version.next();
-        self.write_index_to_file(&self.index_file_path())?;
+        self.write_index_to_file(index_file_path)?;
         lock.release()?;
-        log::debug!("[{}] saved index version {} with lock id {}", getpid(), self.version, lock_id,);
+        log::debug!(
+            "[{}] saved index version {} with lock id {} to {}; {} items",
+            getpid(),
+            self.version,
+            lock_id,
+            index_file_path.as_str(),
+            self.newest_items_by_source_path.len()
+        );
         Ok(())
     }
 
-    fn write_index_to_file(&mut self, path: &Path) -> Result<()> {
-        fs::create_dir_all(
-            path.parent()
-                .ok_or_else(|| anyhow!("cannot compute parent path for {}", path.to_string_lossy()))?,
-        )
-        .context("create index directory")?;
+    fn write_index_to_file(&mut self, index_file_path: &VfsPath) -> Result<()> {
+        let parent = index_file_path.parent();
+        match parent {
+            None => Err(anyhow!(format!("cannot get parent for {}", index_file_path.as_str()))),
+            Some(parent) => Ok(parent
+                .create_dir_all()
+                .context(format!("create index directory at {}", index_file_path.as_str()))?),
+        }?;
 
-        let file = AtomicFile::new(&path, AllowOverwrite);
-
-        file.write(|f| {
-            let contents = serde_json::to_string(&self)?;
-            f.write_all(contents.as_bytes())
-        })
-        .context("writing index to disk")?;
-
-        Ok(())
+        let contents;
+        {
+            let mut file = index_file_path.create_file()?;
+            contents = serde_json::to_string(&self)?;
+            file.write_all(contents.as_bytes()).context("writing index to disk")?;
+            file.flush()?;
+        }
+        let readback = index_file_path.read_to_string()?;
+        if readback != contents {
+            Err(anyhow!("index readback incorrect"))
+        } else {
+            Ok(())
+        }
     }
 
-    fn index_file_path(&self) -> PathBuf {
-        Path::new(&self.index_path).to_path_buf()
-    }
+    fn load_from_file(index_file_path: &VfsPath) -> Result<Self> {
+        let index_text = index_file_path
+            .read_to_string()
+            .context(format!("reading index file contents from {}", index_file_path.as_str()))?;
 
-    fn load_from_file<T: AsRef<Path>>(index_file_path: T) -> Result<Self> {
-        let path_text = format!("{}", index_file_path.as_ref().to_string_lossy());
-        let index_text =
-            fs::read_to_string(path_text.clone()).context(format!("reading index file contents from {}", path_text))?;
-
-        let mut index: Index = serde_json::from_str(&index_text).context(format!("cannot read index from: {}", index_text))?;
-        index.index_path = path_text;
+        let index: Index = serde_json::from_str(&index_text).context(format!("cannot read index from: {}", index_text))?;
         Ok(index)
     }
 
@@ -97,16 +106,8 @@ impl Index {
         self.items_by_file_id.extend(old_items_by_file_id);
     }
 
-    fn index_file_path_for_repository_path(path: &Path) -> PathBuf {
-        path.join("index")
-    }
-
-    fn index_directory(&self) -> Result<PathBuf> {
-        Ok(self
-            .index_file_path()
-            .parent()
-            .ok_or_else(|| anyhow!("cannot compute parent path for {}", self.index_file_path().to_string_lossy()))?
-            .to_path_buf())
+    fn index_file_path_for_repository_path(path: &VfsPath) -> Result<VfsPath> {
+        Ok(path.join("index")?)
     }
 }
 
@@ -114,14 +115,15 @@ impl Index {
 mod must {
     use crate::index::Index;
     use anyhow::Result;
+    use vfs::{MemoryFS, VfsPath};
 
     #[test]
     fn have_version_increased_when_saved() -> Result<()> {
-        let temp_dir = tempfile::tempdir()?;
-        let mut index = Index::new(&temp_dir.into_path());
+        let temp_dir: VfsPath = MemoryFS::new().into();
+        let mut index = Index::new()?;
         let old_version = index.version;
 
-        index.save()?;
+        index.save(&temp_dir)?;
 
         let new_version = index.version;
 

@@ -50,8 +50,8 @@ impl IndexItem {
 impl From<RepositoryItem> for IndexItem {
     fn from(i: RepositoryItem) -> Self {
         IndexItem {
-            relative_path: i.relative_path().to_string_lossy().to_string(),
-            original_source_path: i.original_source_path().to_string_lossy().to_string(),
+            relative_path: i.relative_path().to_string(),
+            original_source_path: i.original_source_path().to_string(),
             id: i.id().clone(),
             version: *i.version(),
         }
