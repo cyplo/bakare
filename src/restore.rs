@@ -5,12 +5,12 @@ use anyhow::Result;
 use anyhow::*;
 
 pub struct Engine<'a> {
-    repository: &'a mut Repository<'a>,
+    repository: &'a mut Repository,
     target_path: &'a Path,
 }
 
 impl<'a> Engine<'a> {
-    pub fn new(repository: &'a mut Repository<'a>, target_path: &'a Path) -> Result<Self> {
+    pub fn new(repository: &'a mut Repository, target_path: &'a Path) -> Result<Self> {
         if !target_path.is_absolute() {
             return Err(anyhow!("path to store not absolute"));
         }

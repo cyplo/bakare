@@ -19,9 +19,9 @@ use walkdir::WalkDir;
 /// right now only on-disk directory storage is supported
 /// repository always knows the newest version of the index and is responsible for syncing the index to disk
 /// and making sure that different threads can access index in parallel
-pub struct Repository<'a> {
+pub struct Repository {
     /// absolute path to where the repository is stored on disk
-    path: &'a Path,
+    path: PathBuf,
     index: Index,
 }
 
@@ -81,20 +81,32 @@ impl fmt::Display for ItemId {
     }
 }
 
-impl<'a> Repository<'a> {
-    pub fn init(path: &Path) -> Result<()> {
-        let mut index = Index::new(path);
+impl<'a> Repository {
+    pub fn init<T>(path: T) -> Result<()>
+    where
+        T: AsRef<Path>,
+    {
+        let mut index = Index::new(path.as_ref());
         index.save()?;
         Ok(())
     }
 
-    pub fn open(path: &Path) -> Result<Repository> {
+    pub fn open<T>(path: T) -> Result<Repository>
+    where
+        T: AsRef<Path>,
+    {
+        let path = path.as_ref();
         if !path.is_absolute() {
             return Err(anyhow!("path to repository not absolute"));
         }
 
         let index = Index::load(path)?;
-        Ok(Repository { path, index })
+        let mut repository_path = PathBuf::new();
+        repository_path.push(path);
+        Ok(Repository {
+            path: repository_path,
+            index,
+        })
     }
 
     pub fn path(&self) -> &Path {
@@ -120,7 +132,7 @@ impl<'a> Repository<'a> {
                 .ok_or_else(|| anyhow!("cannot compute parent path for {}", &destination_path.to_string_lossy()))?;
             fs::create_dir_all(parent)?;
             fs::copy(source_path, destination_path)?;
-            let relative_path = destination_path.strip_prefix(self.path)?;
+            let relative_path = destination_path.strip_prefix(&self.path)?;
             self.index.remember(source_path, relative_path, id);
         }
         Ok(())

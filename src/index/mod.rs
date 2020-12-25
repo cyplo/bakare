@@ -24,7 +24,8 @@ pub struct Index {
 }
 
 impl Index {
-    pub fn new(repository_path: &Path) -> Self {
+    pub fn new<T: AsRef<Path>>(repository_path: T) -> Self {
+        let repository_path = repository_path.as_ref();
         Index {
             newest_items_by_source_path: Default::default(),
             items_by_file_id: Default::default(),

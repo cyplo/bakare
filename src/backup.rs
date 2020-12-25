@@ -8,11 +8,11 @@ use crate::repository::Repository;
 
 pub struct Engine<'a> {
     source_path: &'a Path,
-    repository: &'a mut Repository<'a>,
+    repository: &'a mut Repository,
 }
 
 impl<'a> Engine<'a> {
-    pub fn new(source_path: &'a Path, repository: &'a mut Repository<'a>) -> Result<Self> {
+    pub fn new(source_path: &'a Path, repository: &'a mut Repository) -> Result<Self> {
         if source_path.ancestors().any(|a| a == repository.path()) {
             return Err(anyhow!("source same as repository"));
         }

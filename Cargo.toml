@@ -15,7 +15,7 @@ glob = "0.3"
 hex = "0.4"
 log = "0.4"
 nix = "0.19"
-rand = "0.7"
+rand = "0.8"
 rayon = "1.5"
 rust-crypto = "0.2"
 serde = { version = "1.0", features = ["derive"] }
@@ -29,6 +29,7 @@ walkdir = "2.3"
 
 [dev-dependencies]
 proptest = "0.10"
+vfs = "0.4"
 
 [dev-dependencies.cargo-husky]
 version = "1"

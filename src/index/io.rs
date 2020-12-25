@@ -15,7 +15,8 @@ use nix::unistd::getpid;
 use std::{cmp::max, io::Write};
 
 impl Index {
-    pub fn load(repository_path: &Path) -> Result<Self> {
+    pub fn load<T: AsRef<Path>>(repository_path: T) -> Result<Self> {
+        let repository_path = repository_path.as_ref();
         if !repository_path.exists() {
             let mut index = Index::new(repository_path);
             index.save()?;
