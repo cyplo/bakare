@@ -43,20 +43,16 @@ impl Index {
             self.version = max(self.version, index.version);
         }
         self.version = self.version.next();
-        self.write_index_to_file(self.index_file_path())?;
+        self.write_index_to_file(&self.index_file_path())?;
         lock.release()?;
         log::debug!("[{}] saved index version {} with lock id {}", getpid(), self.version, lock_id,);
         Ok(())
     }
 
-    fn write_index_to_file<T>(&mut self, path: T) -> Result<()>
-    where
-        T: AsRef<Path>,
-    {
+    fn write_index_to_file(&mut self, path: &Path) -> Result<()> {
         fs::create_dir_all(
-            path.as_ref()
-                .parent()
-                .ok_or_else(|| anyhow!("cannot compute parent path for {}", path.as_ref().to_string_lossy()))?,
+            path.parent()
+                .ok_or_else(|| anyhow!("cannot compute parent path for {}", path.to_string_lossy()))?,
         )
         .context("create index directory")?;
 

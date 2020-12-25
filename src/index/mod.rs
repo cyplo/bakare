@@ -35,7 +35,9 @@ impl Index {
         }
     }
 
-    pub fn remember(&mut self, original_source_path: &Path, relative_path: &Path, id: ItemId) {
+    pub fn remember<S: AsRef<Path>, R: AsRef<Path>>(&mut self, original_source_path: S, relative_path: R, id: ItemId) {
+        let original_source_path = original_source_path.as_ref();
+        let relative_path = relative_path.as_ref();
         let item = if let Some(old) = self
             .newest_items_by_source_path
             .get(&original_source_path.to_string_lossy().to_string())
@@ -71,7 +73,8 @@ impl Index {
         )
     }
 
-    pub fn newest_item_by_source_path(&self, path: &Path) -> Result<Option<IndexItem>> {
+    pub fn newest_item_by_source_path<T: AsRef<Path>>(&self, path: T) -> Result<Option<IndexItem>> {
+        let path = path.as_ref();
         if !path.is_absolute() {
             return Err(anyhow!("repository path not absolute"));
         }

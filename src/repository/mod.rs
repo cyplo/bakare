@@ -82,19 +82,13 @@ impl fmt::Display for ItemId {
 }
 
 impl<'a> Repository {
-    pub fn init<T>(path: T) -> Result<()>
-    where
-        T: AsRef<Path>,
-    {
+    pub fn init<T: AsRef<Path>>(path: T) -> Result<()> {
         let mut index = Index::new(path.as_ref());
         index.save()?;
         Ok(())
     }
 
-    pub fn open<T>(path: T) -> Result<Repository>
-    where
-        T: AsRef<Path>,
-    {
+    pub fn open<T: AsRef<Path>>(path: T) -> Result<Repository> {
         let path = path.as_ref();
         if !path.is_absolute() {
             return Err(anyhow!("path to repository not absolute"));

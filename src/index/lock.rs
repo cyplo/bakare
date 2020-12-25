@@ -14,7 +14,8 @@ pub struct Lock {
 }
 
 impl Lock {
-    pub fn lock(index_directory: &Path) -> Result<Self> {
+    pub fn lock<T: AsRef<Path>>(index_directory: T) -> Result<Self> {
+        let index_directory = index_directory.as_ref();
         let mut buffer = [0u8; 16];
         OsRng.fill_bytes(&mut buffer);
         let id = Uuid::from_bytes(buffer);
