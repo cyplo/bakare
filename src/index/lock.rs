@@ -1,8 +1,7 @@
 use anyhow::Result;
-#[cfg(feature = "failpoints")]
 use anyhow::*;
 use fail::fail_point;
-use std::io::Write;
+use std::{io::Write, time::Instant};
 use uuid::Uuid;
 use vfs::VfsPath;
 
@@ -13,12 +12,18 @@ pub struct Lock {
     path: VfsPath,
 }
 
+const MAX_TIMEOUT_MILLIS: u16 = 8192;
+
 impl Lock {
     pub fn lock(index_directory: &VfsPath) -> Result<Self> {
+        Lock::lock_with_timeout(index_directory, MAX_TIMEOUT_MILLIS)
+    }
+
+    pub fn lock_with_timeout(index_directory: &VfsPath, max_timeout_millis: u16) -> Result<Self> {
         let mut buffer = [0u8; 16];
         OsRng.fill_bytes(&mut buffer);
         let id = Uuid::from_bytes(buffer);
-        Lock::wait_to_have_sole_lock(id, index_directory)?;
+        Lock::wait_to_have_sole_lock(id, index_directory, max_timeout_millis)?;
         let path = Lock::lock_file_path(index_directory, id)?;
         Ok(Lock { path })
     }
@@ -35,14 +40,20 @@ impl Lock {
         Ok(())
     }
 
-    fn wait_to_have_sole_lock(lock_id: Uuid, index_directory: &VfsPath) -> Result<()> {
+    fn wait_to_have_sole_lock(lock_id: Uuid, index_directory: &VfsPath, max_timeout_millis: u16) -> Result<()> {
+        let start_time = Instant::now();
         let _ = Lock::create_lock_file(lock_id, index_directory);
         while !Lock::sole_lock(lock_id, index_directory)? {
             let path = Lock::lock_file_path(index_directory, lock_id)?;
-            path.remove_file()?;
-            let sleep_duration = time::Duration::from_millis((OsRng.next_u32() % 256).into());
+            if path.exists() {
+                path.remove_file()?;
+            }
+            let sleep_duration = time::Duration::from_millis((OsRng.next_u32() % 64).into());
             thread::sleep(sleep_duration);
             let _ = Lock::create_lock_file(lock_id, index_directory);
+            if start_time.elapsed().as_millis() > max_timeout_millis.into() {
+                return Err(anyhow!("timed out waiting on lock"));
+            }
         }
         Ok(())
     }
@@ -51,11 +62,14 @@ impl Lock {
         let my_lock_file_path = Lock::lock_file_path(index_directory, lock_id)?;
         let locks = Lock::all_locks(index_directory)?;
         let mut only_mine = true;
-        for path in locks {
-            if path != my_lock_file_path {
+        for path in &locks {
+            if path != &my_lock_file_path {
                 only_mine = false;
                 break;
             }
+        }
+        if locks.iter().count() == 0 {
+            return Ok(false);
         }
         Ok(only_mine)
     }
@@ -98,6 +112,8 @@ mod must {
     use anyhow::*;
     #[cfg(feature = "failpoints")]
     use fail::FailScenario;
+    #[cfg(feature = "failpoints")]
+    use two_rusty_forks::rusty_fork_test;
     use vfs::{MemoryFS, VfsPath};
 
     #[test]
@@ -112,19 +128,34 @@ mod must {
         Ok(())
     }
 
-    #[test]
     #[cfg(feature = "failpoints")]
-    fn be_able_to_lock_under_high_contention() -> Result<()> {
-        let scenario = FailScenario::setup();
-        fail::cfg("create-lock-file", "90%10*return(some lock file creation error)->off").map_err(|e| anyhow!(e))?;
+    rusty_fork_test! {
+        #[test]
+        fn be_able_to_lock_when_creating_lock_file_fails_sometimes() {
+            let scenario = FailScenario::setup();
+            fail::cfg("create-lock-file", "90%10*return(some lock file creation error)->off").map_err(|e| anyhow!(e)).unwrap();
 
-        {
-            let path = MemoryFS::new().into();
-            let lock = Lock::lock(&path)?;
-            lock.release()?;
+            {
+                let path = MemoryFS::new().into();
+                let lock = Lock::lock(&path).unwrap();
+                lock.release().unwrap();
+            }
+
+            scenario.teardown();
         }
+    }
 
-        scenario.teardown();
-        Ok(())
+    #[cfg(feature = "failpoints")]
+    rusty_fork_test! {
+        #[test]
+        fn know_to_give_up_when_creating_lock_file_always_fails()  {
+            let scenario = FailScenario::setup();
+            fail::cfg("create-lock-file", "return(persistent lock file creation error)").map_err(|e| anyhow!(e)).unwrap();
+
+            let path = MemoryFS::new().into();
+            assert!(Lock::lock_with_timeout(&path, 1).is_err());
+
+            scenario.teardown();
+        }
     }
 }
