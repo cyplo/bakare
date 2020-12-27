@@ -28,9 +28,7 @@ mod must {
         assert_eq!(finished_backup_runs.len(), parallel_backups_number);
         assert!(data_weight(&repository_path)? > 0);
 
-        let target_directory = tempfile::tempdir()?.into_path();
-        let target_path: VfsPath = PhysicalFS::new(target_directory).into();
-        let target_path = target_path.join(&format!("target-{}", getpid()))?;
+        let target_path: VfsPath = random_in_memory_path("target")?;
         let all_restored_files = restore_all(&repository_path, &target_path)?;
         assert_eq!(all_restored_files.len(), total_number_of_files);
 
