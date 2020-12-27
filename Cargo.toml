@@ -9,6 +9,7 @@ license = "AGPL-3.0"
 anyhow = "1.0"
 atomicwrites = "0.2"
 base64 = "0.13"
+fail = "0.4"
 femme = "2.1"
 fs2 = "0.4"
 glob = "0.3"
@@ -38,3 +39,6 @@ features = ["run-for-all", "prepush-hook", "run-cargo-check", "run-cargo-test", 
 
 [profile.release]
 debug = 1
+
+[features]
+failpoints = [ "fail/failpoints" ]

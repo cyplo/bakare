@@ -1,4 +1,7 @@
 use anyhow::Result;
+#[cfg(feature = "failpoints")]
+use anyhow::*;
+use fail::fail_point;
 use std::io::Write;
 use uuid::Uuid;
 use vfs::VfsPath;
@@ -33,13 +36,13 @@ impl Lock {
     }
 
     fn wait_to_have_sole_lock(lock_id: Uuid, index_directory: &VfsPath) -> Result<()> {
-        Lock::create_lock_file(lock_id, index_directory)?;
+        let _ = Lock::create_lock_file(lock_id, index_directory);
         while !Lock::sole_lock(lock_id, index_directory)? {
             let path = Lock::lock_file_path(index_directory, lock_id)?;
             path.remove_file()?;
             let sleep_duration = time::Duration::from_millis((OsRng.next_u32() % 256).into());
             thread::sleep(sleep_duration);
-            Lock::create_lock_file(lock_id, index_directory)?;
+            let _ = Lock::create_lock_file(lock_id, index_directory);
         }
         Ok(())
     }
@@ -67,6 +70,7 @@ impl Lock {
 
     fn create_lock_file(lock_id: Uuid, index_directory: &VfsPath) -> Result<()> {
         let lock_file_path = Lock::lock_file_path(index_directory, lock_id)?;
+        fail_point!("create-lock-file", |e: Option<String>| Err(anyhow!(e.unwrap())));
         let mut file = lock_file_path.create_file()?;
         let lock_id_text = lock_id.to_hyphenated().to_string();
         let lock_id_bytes = lock_id_text.as_bytes();
@@ -89,6 +93,11 @@ impl Drop for Lock {
 mod must {
     use super::Lock;
     use anyhow::Result;
+
+    #[cfg(feature = "failpoints")]
+    use anyhow::*;
+    #[cfg(feature = "failpoints")]
+    use fail::FailScenario;
     use vfs::{MemoryFS, VfsPath};
 
     #[test]
@@ -100,6 +109,22 @@ mod must {
         let entries = temp_dir.read_dir()?.count();
 
         assert_eq!(entries, 0);
+        Ok(())
+    }
+
+    #[test]
+    #[cfg(feature = "failpoints")]
+    fn be_able_to_lock_under_high_contention() -> Result<()> {
+        let scenario = FailScenario::setup();
+        fail::cfg("create-lock-file", "90%10*return(some lock file creation error)->off").map_err(|e| anyhow!(e))?;
+
+        {
+            let path = MemoryFS::new().into();
+            let lock = Lock::lock(&path)?;
+            lock.release()?;
+        }
+
+        scenario.teardown();
         Ok(())
     }
 }
