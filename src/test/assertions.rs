@@ -165,7 +165,7 @@ pub mod in_memory {
             }
         }
 
-        result.sort_by(|a, b| a.filename().cmp(&b.filename()));
+        result.sort_by_key(|a| a.filename());
 
         Ok(result)
     }

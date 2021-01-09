@@ -13,6 +13,7 @@ pub struct Lock {
 }
 
 const MAX_TIMEOUT_MILLIS: u16 = 8192;
+const FILE_EXTENSION: &str = ".lock";
 
 impl Lock {
     pub fn lock(index_directory: &VfsPath) -> Result<Self> {
@@ -78,7 +79,7 @@ impl Lock {
         Ok(index_directory
             .read_dir()?
             .into_iter()
-            .filter(|f| f.filename().ends_with(".lock"))
+            .filter(|f| f.filename().ends_with(FILE_EXTENSION))
             .collect())
     }
 
@@ -92,7 +93,7 @@ impl Lock {
     }
 
     fn lock_file_path(path: &VfsPath, lock_id: Uuid) -> Result<VfsPath> {
-        let file_name = format!("{}.lock", lock_id);
+        let file_name = format!("{}.{}", lock_id, FILE_EXTENSION);
         Ok(path.join(&file_name)?)
     }
 }
@@ -108,8 +109,6 @@ mod must {
     use super::Lock;
     use anyhow::Result;
 
-    #[cfg(feature = "failpoints")]
-    use fail::FailScenario;
     #[cfg(feature = "failpoints")]
     use two_rusty_forks::rusty_fork_test;
     use vfs::{MemoryFS, VfsPath};
@@ -130,16 +129,11 @@ mod must {
     rusty_fork_test! {
         #[test]
         fn be_able_to_lock_when_creating_lock_file_fails_sometimes() {
-            let scenario = FailScenario::setup();
             fail::cfg("create-lock-file", "90%10*return(some lock file creation error)->off").unwrap();
+            let path = MemoryFS::new().into();
 
-            {
-                let path = MemoryFS::new().into();
-                let lock = Lock::lock(&path).unwrap();
-                lock.release().unwrap();
-            }
-
-            scenario.teardown();
+            let lock = Lock::lock(&path).unwrap();
+            lock.release().unwrap();
         }
     }
 
@@ -147,13 +141,10 @@ mod must {
     rusty_fork_test! {
         #[test]
         fn know_to_give_up_when_creating_lock_file_always_fails()  {
-            let scenario = FailScenario::setup();
             fail::cfg("create-lock-file", "return(persistent lock file creation error)").unwrap();
-
             let path = MemoryFS::new().into();
-            assert!(Lock::lock_with_timeout(&path, 1).is_err());
 
-            scenario.teardown();
+            assert!(Lock::lock_with_timeout(&path, 1).is_err());
         }
     }
 }
