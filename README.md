@@ -31,7 +31,7 @@ Contributions are welcome :)
 
 - automatic node discovery - two roles: data publisher and data persister - should be able to figure out which node is which automatically
 - test with randomly created dirs and files, with property based tests and fuzzer
-- see if we can use `salsa` for recomputaiton
+- see if we can use `salsa` for recomputation
 - index corruption tests - mutate random byte and see if everything is readable
 - network packet drop tests
 - use bevy for decoupling ?
@@ -39,7 +39,7 @@ Contributions are welcome :)
 
 ## Motivation: All the backup systems I tried are either slow or crashing or both for me
 
-- duply: works but is very slow
+### duply: works but is very slow
 
 ```text
 --------------[ Backup Statistics ]--------------
@@ -63,7 +63,7 @@ Errors 0
 --- Finished state OK at 12:25:15.000 - Runtime 03:06:43.000 ---
 ```
 
-- restic:
+### restic:
 
-  - crashes with OOM
-  - corrupts repo if you suspend one backup process and launch another from a different computer
+- crashes with OOM sometimes
+- corrupts repo if you suspend one backup process and launch another from a different computer
