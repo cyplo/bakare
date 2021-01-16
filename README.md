@@ -1,5 +1,10 @@
 # Bakare: modern and simple, yet efficient backup solution
 
+## This is pre-alpha, contributions welcome
+
+It does not even have a standalone binary yet, but the engine looks promising.
+Contributions are welcome :)
+
 ## Goals for bakare:
 
 - [x] simple deduplication of file data - don't store the same exact file data twice
