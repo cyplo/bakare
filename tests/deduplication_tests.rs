@@ -2,8 +2,8 @@
 mod must {
     use bakare::test::assertions::in_memory::*;
     use bakare::{repository::Repository, test::source::TestSource};
-
     use proptest::prelude::*;
+
     proptest! {
         #[test]
         fn store_duplicated_files_just_once(contents in any::<[u8;3]>()) {
