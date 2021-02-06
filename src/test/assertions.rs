@@ -172,7 +172,7 @@ pub mod in_memory {
 
     fn assert_target_file_contents(restored_path: &VfsPath, expected_contents: &[u8]) -> Result<()> {
         let mut actual_contents = vec![];
-        assert!(restored_path.exists(), "Expected '{:?}' to be there", restored_path);
+        assert!(restored_path.exists(), "expected '{}' to be there", restored_path.as_str());
         restored_path.open_file()?.read_to_end(&mut actual_contents)?;
         assert_eq!(expected_contents, actual_contents);
         Ok(())

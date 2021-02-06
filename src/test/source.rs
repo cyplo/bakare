@@ -20,7 +20,6 @@ impl TestSource {
         let path = self.file_path(filename)?;
         let mut file = path.create_file()?;
         file.write_all(bytes)?;
-        dbg!(format!("wrote bytes under {}", filename));
         Ok(())
     }
 

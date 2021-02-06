@@ -43,6 +43,7 @@ impl RepositoryItem {
         let original_source_path = Path::new(self.original_source_path());
         let source_path_relative = original_source_path.strip_prefix("/")?;
         let source_path_relative = source_path_relative.to_string_lossy();
+
         let target_path = save_to.join(&source_path_relative)?;
         let parent = target_path
             .parent()
@@ -54,6 +55,7 @@ impl RepositoryItem {
         }
         self.absolute_path.copy_file(&target_path)?;
 
+        log::debug!("[{}] saved data to {}", getpid(), target_path.as_str());
         Ok(())
     }
 
