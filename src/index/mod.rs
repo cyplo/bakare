@@ -13,7 +13,7 @@ mod io;
 pub mod item;
 mod lock;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct Index {
     newest_items_by_source_path: HashMap<String, IndexItem>,
     items_by_file_id: HashMap<ItemId, IndexItem>,

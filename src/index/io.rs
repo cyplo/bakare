@@ -86,7 +86,8 @@ impl Index {
             .read_to_string()
             .context(format!("reading index file contents from {}", index_file_path.as_str()))?;
 
-        let index: Index = serde_json::from_str(&index_text).context(format!("cannot read index from: {}", index_text))?;
+        let index: Index =
+            serde_json::from_str(&index_text).context(format!("cannot read index from: {}", index_file_path.as_str()))?;
         Ok(index)
     }
 
@@ -115,6 +116,7 @@ impl Index {
 mod must {
     use crate::index::Index;
     use anyhow::Result;
+
     use vfs::{MemoryFS, VfsPath};
 
     #[test]
@@ -128,6 +130,19 @@ mod must {
         let new_version = index.version;
 
         assert!(new_version > old_version);
+
+        Ok(())
+    }
+
+    #[test]
+    fn be_same_when_loaded_from_disk() -> Result<()> {
+        let repository_path: VfsPath = MemoryFS::new().into();
+        let mut original = Index::new()?;
+
+        original.save(&repository_path)?;
+        let loaded = Index::load(&repository_path)?;
+
+        assert_eq!(original, loaded);
 
         Ok(())
     }
