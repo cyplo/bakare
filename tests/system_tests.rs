@@ -19,7 +19,7 @@ mod must {
 
     #[test]
     fn restore_files_after_reopening_repository() -> Result<()> {
-        let source = TestSource::new().unwrap();
+        let source = TestSource::new()?;
         let repository_path = random_in_memory_path("repository")?;
         let restore_target = random_in_memory_path("target")?;
 
