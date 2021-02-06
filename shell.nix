@@ -11,7 +11,7 @@ in
       linuxPackages.perf flamegraph cargo-flamegraph geeqie
       cargo-edit
       cacert openssl openssh zlib
-      pkgconfig clang llvm
+      pkgconfig clang llvm kdbg lldb gdb
       git
     ];
     shellHook = ''
