@@ -5,14 +5,13 @@ use uuid::Uuid;
 
 use crate::index::item::IndexItem;
 use crate::index::{lock, Index};
+use crate::io::error_correcting_encoder;
 use crate::repository::ItemId;
 use anyhow::Result;
 use anyhow::*;
 use lock::Lock;
 use nix::unistd::getpid;
 use std::{cmp::max, io::Write};
-
-const DATA_SHARD_SIZE: u16 = 4096;
 
 impl Index {
     pub fn load(repository_path: &VfsPath) -> Result<Self> {
@@ -71,7 +70,7 @@ impl Index {
         let serialised = serde_json::to_string(&self)?;
 
         let bytes = serialised.as_bytes();
-        let encoded = Index::encode(bytes)?;
+        let encoded = error_correcting_encoder::encode(bytes)?;
 
         {
             let mut file = index_file_path.create_file()?;
@@ -79,18 +78,18 @@ impl Index {
             file.flush()?;
         }
 
-        let mut file = index_file_path.open_file()?;
-        let mut readback = vec![];
-        file.read_to_end(&mut readback)?;
+        let readback = {
+            let mut file = index_file_path.open_file()?;
+            let mut readback = vec![];
+            file.read_to_end(&mut readback)?;
+            readback
+        };
+
         if readback != encoded {
             Err(anyhow!("index readback incorrect"))
         } else {
             Ok(())
         }
-    }
-
-    fn encode(bytes: &[u8]) -> Result<&[u8]> {
-        Ok(bytes)
     }
 
     fn load_from_file(index_file_path: &VfsPath) -> Result<Self> {
@@ -156,41 +155,6 @@ mod must {
         let loaded = Index::load(&repository_path)?;
 
         assert_eq!(original, loaded);
-
-        Ok(())
-    }
-
-    #[test]
-    fn survive_file_corruption() -> Result<()> {
-        let repository_path: VfsPath = MemoryFS::new().into();
-        let mut original = Index::new()?;
-
-        original.save(&repository_path)?;
-        corrupt(&repository_path)?;
-        let loaded = Index::load(&repository_path)?;
-
-        assert_eq!(original, loaded);
-
-        Ok(())
-    }
-
-    fn corrupt(repository_path: &VfsPath) -> Result<()> {
-        let index_file_path = &Index::index_file_path_for_repository_path(&repository_path)?;
-
-        let size = dbg!(index_file_path.metadata()?.len as usize);
-        let corrupt_byte_index = rand::thread_rng().gen_range::<usize, _>(0..size);
-
-        let corrupted = {
-            let mut file = index_file_path.open_file()?;
-            let mut buffer = vec![];
-            file.read_to_end(&mut buffer)?;
-            buffer[corrupt_byte_index] = rand::thread_rng().gen::<u8>();
-            buffer
-        };
-        {
-            let mut file = index_file_path.create_file()?;
-            file.write_all(&corrupted)?;
-        }
 
         Ok(())
     }
