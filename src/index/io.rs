@@ -12,6 +12,8 @@ use lock::Lock;
 use nix::unistd::getpid;
 use std::{cmp::max, io::Write};
 
+const DATA_SHARD_SIZE: u16 = 4096;
+
 impl Index {
     pub fn load(repository_path: &VfsPath) -> Result<Self> {
         if !repository_path.exists() {
@@ -66,19 +68,29 @@ impl Index {
                 .context(format!("create index directory at {}", index_file_path.as_str()))?),
         }?;
 
-        let contents;
+        let serialised = serde_json::to_string(&self)?;
+
+        let bytes = serialised.as_bytes();
+        let encoded = Index::encode(bytes)?;
+
         {
             let mut file = index_file_path.create_file()?;
-            contents = serde_json::to_string(&self)?;
-            file.write_all(contents.as_bytes()).context("writing index to disk")?;
+            file.write_all(encoded).context("writing index to disk")?;
             file.flush()?;
         }
-        let readback = index_file_path.read_to_string()?;
-        if readback != contents {
+
+        let mut file = index_file_path.open_file()?;
+        let mut readback = vec![];
+        file.read_to_end(&mut readback)?;
+        if readback != encoded {
             Err(anyhow!("index readback incorrect"))
         } else {
             Ok(())
         }
+    }
+
+    fn encode(bytes: &[u8]) -> Result<&[u8]> {
+        Ok(bytes)
     }
 
     fn load_from_file(index_file_path: &VfsPath) -> Result<Self> {
@@ -117,6 +129,7 @@ mod must {
     use crate::index::Index;
     use anyhow::Result;
 
+    use rand::Rng;
     use vfs::{MemoryFS, VfsPath};
 
     #[test]
@@ -143,6 +156,41 @@ mod must {
         let loaded = Index::load(&repository_path)?;
 
         assert_eq!(original, loaded);
+
+        Ok(())
+    }
+
+    #[test]
+    fn survive_file_corruption() -> Result<()> {
+        let repository_path: VfsPath = MemoryFS::new().into();
+        let mut original = Index::new()?;
+
+        original.save(&repository_path)?;
+        corrupt(&repository_path)?;
+        let loaded = Index::load(&repository_path)?;
+
+        assert_eq!(original, loaded);
+
+        Ok(())
+    }
+
+    fn corrupt(repository_path: &VfsPath) -> Result<()> {
+        let index_file_path = &Index::index_file_path_for_repository_path(&repository_path)?;
+
+        let size = dbg!(index_file_path.metadata()?.len as usize);
+        let corrupt_byte_index = rand::thread_rng().gen_range::<usize, _>(0..size);
+
+        let corrupted = {
+            let mut file = index_file_path.open_file()?;
+            let mut buffer = vec![];
+            file.read_to_end(&mut buffer)?;
+            buffer[corrupt_byte_index] = rand::thread_rng().gen::<u8>();
+            buffer
+        };
+        {
+            let mut file = index_file_path.create_file()?;
+            file.write_all(&corrupted)?;
+        }
 
         Ok(())
     }
