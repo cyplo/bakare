@@ -1,4 +1,3 @@
-use log::error;
 use std::collections::HashMap;
 use vfs::VfsPath;
 
@@ -132,7 +131,6 @@ mod must {
     use crate::index::Index;
     use anyhow::Result;
 
-    use rand::Rng;
     use vfs::{MemoryFS, VfsPath};
 
     #[test]

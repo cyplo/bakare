@@ -34,6 +34,7 @@ walkdir = "2.3"
 [dev-dependencies]
 proptest = "0.10"
 two-rusty-forks = "0.4.0"
+pretty_assertions = "0.7"
 
 [dev-dependencies.cargo-husky]
 version = "1"
