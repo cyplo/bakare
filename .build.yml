@@ -3,7 +3,7 @@ sources:
   - git@git.sr.ht:~cyplo/bakare
 
 secrets:
-  - b7161fff-05f4-4470-b4a1-57bd67dede23
+  - 6c23a8c1-7a30-4a7e-b3b7-0171e898a7d3
   - 996295b0-681c-49e8-8774-1be2f3e0bfe9
 
 environment:

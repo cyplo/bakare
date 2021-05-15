@@ -74,7 +74,7 @@ impl Index {
 
         {
             let mut file = index_file_path.create_file()?;
-            file.write_all(encoded).context("writing index to disk")?;
+            file.write_all(&encoded).context("writing index to disk")?;
             file.flush()?;
         }
 

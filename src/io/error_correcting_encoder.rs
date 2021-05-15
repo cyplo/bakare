@@ -1,18 +1,17 @@
+use std::io::Read;
+
 use anyhow::Result;
+use reed_solomon::Encoder;
 
-pub fn encode(bytes: &[u8]) -> Result<&[u8]> {
-    // find number of shards and parity blocks
-    // encode checksum with each block
-    // when decoding, remove blocks with invalid checksum
+const ECC_LENGTH: usize = 8;
 
-    Ok(bytes)
+pub fn encode(bytes: &[u8]) -> Result<Vec<u8>> {
+    let encoder = Encoder::new(ECC_LENGTH);
+    let encoded = encoder.encode(bytes);
+    Ok(encoded.bytes().collect::<Result<Vec<u8>, _>>()?)
 }
 
 pub fn decode(bytes: &[u8]) -> Result<&[u8]> {
-    // find number of shards and parity blocks
-    // encode checksum with each block
-    // when decoding, remove blocks with invalid checksum
-
     Ok(bytes)
 }
 
@@ -20,7 +19,6 @@ mod must {
 
     use anyhow::Result;
     use rand::{thread_rng, Rng, RngCore};
-    use vfs::{MemoryFS, VfsPath};
 
     use super::{decode, encode};
 
@@ -35,7 +33,7 @@ mod must {
         let corrupt_byte_index = rand::thread_rng().gen_range::<usize, _>(0..size);
 
         let mut corrupted: [u8; 32] = [0; 32];
-        corrupted.copy_from_slice(encoded);
+        corrupted.copy_from_slice(&encoded);
         corrupted[corrupt_byte_index] = rand::thread_rng().gen::<u8>();
 
         let decoded = decode(&corrupted)?;
