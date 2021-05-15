@@ -1,3 +1,4 @@
+use log::error;
 use std::collections::HashMap;
 use vfs::VfsPath;
 
@@ -93,9 +94,12 @@ impl Index {
     }
 
     fn load_from_file(index_file_path: &VfsPath) -> Result<Self> {
-        let index_text = index_file_path
-            .read_to_string()
-            .context(format!("reading index file contents from {}", index_file_path.as_str()))?;
+        let mut file = index_file_path.open_file()?;
+        let mut encoded = vec![];
+        file.read_to_end(&mut encoded)?;
+
+        let decoded = error_correcting_encoder::decode(&encoded)?;
+        let index_text = String::from_utf8(decoded)?;
 
         let index: Index =
             serde_json::from_str(&index_text).context(format!("cannot read index from: {}", index_file_path.as_str()))?;

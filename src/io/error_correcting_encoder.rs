@@ -1,6 +1,7 @@
 use std::io::Read;
 
-use anyhow::Result;
+use anyhow::*;
+use reed_solomon::Decoder;
 use reed_solomon::Encoder;
 
 const ECC_LENGTH: usize = 8;
@@ -11,8 +12,13 @@ pub fn encode(bytes: &[u8]) -> Result<Vec<u8>> {
     Ok(encoded.bytes().collect::<Result<Vec<u8>, _>>()?)
 }
 
-pub fn decode(bytes: &[u8]) -> Result<&[u8]> {
-    Ok(bytes)
+pub fn decode(bytes: &[u8]) -> Result<Vec<u8>> {
+    let decoder = Decoder::new(ECC_LENGTH);
+    let maybe_corrected = decoder.correct(bytes, None);
+    match maybe_corrected {
+        Ok(corrected) => Ok(corrected.data().to_vec()),
+        Err(_) => Err(anyhow!("")),
+    }
 }
 
 mod must {
