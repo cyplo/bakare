@@ -4,6 +4,7 @@ mod must {
     use bakare::backup;
     use bakare::test::assertions::in_memory::*;
     use bakare::{repository::Repository, test::source::TestSource};
+    use tempfile::tempdir;
 
     #[test]
     fn restore_multiple_files() -> Result<()> {
@@ -19,8 +20,9 @@ mod must {
     #[test]
     fn restore_files_after_reopening_repository() -> Result<()> {
         let source = TestSource::new()?;
-        let repository_path = random_in_memory_path("repository")?;
-        let restore_target = random_in_memory_path("target")?;
+        let dir = tempdir()?;
+        let repository_path = dir.path();
+        let restore_target = tempdir()?;
 
         Repository::init(&repository_path)?;
 
@@ -29,7 +31,7 @@ mod must {
 
         backup_file_with_text_contents(&source, &repository_path, source_file_relative_path, original_contents)?;
 
-        restore_all_from_reloaded_repository(&repository_path, &restore_target)?;
+        restore_all_from_reloaded_repository(&repository_path, &restore_target.path())?;
 
         let source_file_full_path = &source.file_path(source_file_relative_path)?;
         assert_restored_file_contents(&repository_path, source_file_full_path, original_contents.as_bytes())
@@ -38,7 +40,8 @@ mod must {
     #[test]
     fn restore_older_version_of_file() -> Result<()> {
         let source = TestSource::new().unwrap();
-        let repository_path = random_in_memory_path("repository")?;
+        let dir = tempdir()?;
+        let repository_path = dir.path();
         Repository::init(&repository_path)?;
 
         let source_file_relative_path = "some path";
@@ -59,7 +62,8 @@ mod must {
     #[test]
     fn newer_version_should_be_greater_than_earlier_version() -> Result<()> {
         let source = TestSource::new().unwrap();
-        let repository_path = random_in_memory_path("repository")?;
+        let dir = tempdir()?;
+        let repository_path = dir.path();
         Repository::init(&repository_path)?;
 
         let source_file_relative_path = "some path";
@@ -83,7 +87,8 @@ mod must {
     #[test]
     fn restore_latest_version_by_default() -> Result<()> {
         let source = TestSource::new().unwrap();
-        let repository_path = random_in_memory_path("repository")?;
+        let dir = tempdir()?;
+        let repository_path = dir.path();
         Repository::init(&repository_path)?;
 
         let source_file_relative_path = "some path";
@@ -97,7 +102,8 @@ mod must {
 
     #[test]
     fn forbid_backup_of_paths_within_repository() -> Result<()> {
-        let repository_path = random_in_memory_path("repository")?;
+        let dir = tempdir()?;
+        let repository_path = dir.path();
         Repository::init(&repository_path)?;
         let mut repository = Repository::open(&repository_path)?;
 

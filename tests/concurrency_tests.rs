@@ -1,5 +1,10 @@
 #[cfg(test)]
 mod must {
+    use std::{
+        fs,
+        path::{Path, PathBuf},
+    };
+
     use anyhow::Result;
     use bakare::test::source::TestSource;
     use bakare::{backup, restore};
@@ -9,15 +14,15 @@ mod must {
         sys::wait::{waitpid, WaitStatus},
         unistd::getpid,
     };
-    use vfs::{PhysicalFS, VfsPath};
+    use tempfile::tempdir;
 
     #[test]
     fn handle_concurrent_backups() -> Result<()> {
         setup_logger();
 
-        let repository_directory = tempfile::tempdir()?.into_path();
-        let repository_path: VfsPath = PhysicalFS::new(repository_directory).into();
-        let repository_path = repository_path.join(&format!("repository-{}", getpid()))?;
+        let dir = tempdir()?;
+        let repository_path = dir.path();
+        let repository_path = repository_path.join(&format!("repository-{}", getpid()));
         Repository::init(&repository_path)?;
 
         let parallel_backups_number = 16;
@@ -28,8 +33,8 @@ mod must {
         assert_eq!(finished_backup_runs.len(), parallel_backups_number);
         assert!(data_weight(&repository_path)? > 0);
 
-        let target_path: VfsPath = random_in_memory_path("target")?;
-        let all_restored_files = restore_all(&repository_path, &target_path)?;
+        let target_path = tempdir()?;
+        let all_restored_files = restore_all(&repository_path, &target_path.path())?;
         assert_eq!(all_restored_files.len(), total_number_of_files);
 
         assert_all_files_in_place(parallel_backups_number, files_per_backup_number, &all_restored_files)?;
@@ -39,14 +44,16 @@ mod must {
     fn assert_all_files_in_place(
         parallel_backups_number: usize,
         files_per_backup_number: usize,
-        all_restored_files: &[VfsPath],
+        all_restored_files: &[PathBuf],
     ) -> Result<()> {
         for i in 0..parallel_backups_number {
             for j in 0..files_per_backup_number {
                 let id = file_id(i, j);
-                let file = all_restored_files.iter().find(|f| f.filename() == id);
-                assert!(file.unwrap().exists()?, "file {:?} does not exist", file);
-                let contents = file.unwrap().read_to_string()?;
+                let file = all_restored_files
+                    .iter()
+                    .find(|f| f.file_name().unwrap().to_string_lossy() == id);
+                assert!(file.unwrap().exists(), "file {:?} does not exist", file);
+                let contents = fs::read_to_string(file.unwrap())?;
                 assert_eq!(id.to_string(), contents.to_owned());
             }
         }
@@ -54,7 +61,7 @@ mod must {
     }
 
     fn backup_in_parallel(
-        repository_path: &VfsPath,
+        repository_path: &Path,
         parallel_backups_number: usize,
         files_per_backup_number: usize,
     ) -> Result<Vec<usize>> {
@@ -86,7 +93,7 @@ mod must {
         Ok(task_numbers)
     }
 
-    fn backup_process(task_number: usize, repository_path: &VfsPath, files_per_backup_number: usize) -> Result<()> {
+    fn backup_process(task_number: usize, repository_path: &Path, files_per_backup_number: usize) -> Result<()> {
         let mut repository = Repository::open(repository_path)?;
         let source = TestSource::new().unwrap();
         let mut backup_engine = backup::Engine::new(source.path(), &mut repository)?;
@@ -98,7 +105,7 @@ mod must {
         Ok(())
     }
 
-    fn restore_all(repository_path: &VfsPath, restore_target: &VfsPath) -> Result<Vec<VfsPath>> {
+    fn restore_all(repository_path: &Path, restore_target: &Path) -> Result<Vec<PathBuf>> {
         let mut restore_repository = Repository::open(repository_path)?;
         let mut restore_engine = restore::Engine::new(&mut restore_repository, &restore_target)?;
         restore_engine.restore_all()?;

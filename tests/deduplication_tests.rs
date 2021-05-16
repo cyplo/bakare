@@ -3,12 +3,14 @@ mod must {
     use bakare::test::assertions::in_memory::*;
     use bakare::{repository::Repository, test::source::TestSource};
     use proptest::prelude::*;
+    use tempfile::tempdir;
 
     proptest! {
         #[test]
         fn store_duplicated_files_just_once(contents in any::<[u8;3]>()) {
             let source = TestSource::new().unwrap();
-            let repository_path = random_in_memory_path("repository").unwrap();
+            let dir = tempdir().unwrap();
+            let repository_path = dir.path();
             Repository::init(&repository_path).unwrap();
             assert_eq!(data_weight(&repository_path).unwrap(), 0);
 

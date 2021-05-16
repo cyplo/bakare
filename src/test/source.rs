@@ -1,24 +1,25 @@
-use std::io::Write;
+use std::{
+    fs::{self, File},
+    io::Write,
+    path::{Path, PathBuf},
+};
 
 use anyhow::Result;
-use vfs::VfsPath;
-
-use super::assertions::in_memory::random_in_memory_path;
+use tempfile::{tempdir, TempDir};
 
 pub struct TestSource {
-    directory: VfsPath,
+    directory: TempDir,
 }
 
 impl TestSource {
     pub fn new() -> Result<Self> {
-        let path: VfsPath = random_in_memory_path("testsource")?;
-        path.create_dir_all()?;
-        Ok(Self { directory: path })
+        let dir = tempdir()?;
+        Ok(Self { directory: dir })
     }
 
     pub fn write_bytes_to_file(&self, filename: &str, bytes: &[u8]) -> Result<()> {
         let path = self.file_path(filename)?;
-        let mut file = path.create_file()?;
+        let mut file = File::create(path)?;
         file.write_all(bytes)?;
         Ok(())
     }
@@ -33,19 +34,19 @@ impl TestSource {
         Ok(())
     }
 
-    pub fn path(&self) -> &VfsPath {
-        &self.directory
+    pub fn path(&self) -> &Path {
+        &self.directory.path()
     }
 
-    pub fn file_path(&self, filename: &str) -> Result<VfsPath> {
-        let file_path = self.directory.join(filename)?;
+    pub fn file_path(&self, filename: &str) -> Result<PathBuf> {
+        let file_path = self.directory.path().join(filename);
         Ok(file_path)
     }
 }
 
 impl Drop for TestSource {
     fn drop(&mut self) {
-        let _ = self.path().remove_dir_all();
+        let _ = fs::remove_dir_all(self.path());
     }
 }
 #[cfg(test)]
@@ -59,10 +60,10 @@ mod must {
         {
             let source = TestSource::new()?;
             source.write_random_bytes_to_file("somefile", 1)?;
-            path = source.path().clone();
+            path = source.path().to_path_buf();
         }
 
-        assert!(!path.exists()?);
+        assert!(!path.exists());
         Ok(())
     }
 }

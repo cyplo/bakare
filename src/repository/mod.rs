@@ -1,9 +1,12 @@
 pub mod item;
 
-use std::fmt::{Debug, Formatter};
-use std::io::BufReader;
-use std::path::Path;
 use std::{fmt, io};
+use std::{
+    fmt::{Debug, Formatter},
+    path::PathBuf,
+};
+use std::{fs, path::Path};
+use std::{fs::File, io::BufReader};
 
 use crate::index::{Index, IndexItemIterator};
 use anyhow::Result;
@@ -12,7 +15,7 @@ use item::RepositoryItem;
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
 use sha2::Sha512;
-use vfs::{VfsFileType, VfsPath};
+use walkdir::WalkDir;
 
 /// represents a place where backup is stored an can be restored from.
 /// right now only on-disk directory storage is supported
@@ -21,7 +24,7 @@ use vfs::{VfsFileType, VfsPath};
 #[derive(Debug)]
 pub struct Repository {
     /// path to where the repository is stored on disk
-    path: VfsPath,
+    path: PathBuf,
     index: Index,
 }
 
@@ -94,26 +97,26 @@ impl Debug for ItemId {
 }
 
 impl<'a> Repository {
-    pub fn init(path: &VfsPath) -> Result<Repository> {
-        path.create_dir_all()?;
+    pub fn init(path: &Path) -> Result<Repository> {
+        fs::create_dir_all(path)?;
         let mut index = Index::new()?;
         index.save(path)?;
         let repository = Repository::open(path)?;
-        repository.data_dir()?.create_dir_all()?;
+        fs::create_dir_all(repository.data_dir()?)?;
         Ok(repository)
     }
 
-    pub fn open(path: &VfsPath) -> Result<Repository> {
+    pub fn open(path: &Path) -> Result<Repository> {
         let index = Index::load(path)?;
         let repository = Repository {
-            path: path.clone(),
+            path: path.to_path_buf(),
             index,
         };
 
         Ok(repository)
     }
 
-    pub fn path(&self) -> &VfsPath {
+    pub fn path(&self) -> &Path {
         &self.path
     }
 
@@ -121,28 +124,27 @@ impl<'a> Repository {
         self.index.save(&self.path)
     }
 
-    pub fn store(&mut self, source_path: &VfsPath) -> Result<()> {
+    pub fn store(&mut self, source_path: &Path) -> Result<()> {
         let id = Repository::calculate_id(source_path)?;
         let destination = self.data_dir()?;
-        let destination = destination.join(&id.to_string())?;
+        let destination = destination.join(&id.to_string());
 
-        if source_path.metadata()?.file_type != VfsFileType::File {
+        if !source_path.metadata()?.is_file() {
             return Ok(());
         }
         let parent = destination
             .parent()
-            .ok_or_else(|| anyhow!("cannot compute parent path for {}", &destination.as_str()))?;
-        parent.create_dir_all()?;
-        if !destination.exists()? {
-            source_path.copy_file(&destination)?;
+            .ok_or_else(|| anyhow!("cannot compute parent path for {}", &destination.to_string_lossy()))?;
+        fs::create_dir_all(parent)?;
+        if !destination.exists() {
+            fs::copy(&source_path, &destination)?;
         }
-        let destination_path = Path::new(destination.as_str());
-        let relative_path = destination_path.strip_prefix(&self.path.as_str())?.to_string_lossy();
-        self.index.remember(source_path, &relative_path, id);
+        let relative_path = destination.strip_prefix(&self.path())?;
+        self.index.remember(source_path, &relative_path.to_string_lossy(), id);
         Ok(())
     }
 
-    pub fn newest_item_by_source_path(&self, path: &VfsPath) -> Result<Option<RepositoryItem>> {
+    pub fn newest_item_by_source_path(&self, path: &Path) -> Result<Option<RepositoryItem>> {
         let item = self.index.newest_item_by_source_path(path)?;
         match item {
             None => Ok(None),
@@ -170,7 +172,7 @@ impl<'a> Repository {
         let relative_path = index_item.relative_path();
         let repository_path = self.path();
         let original_source_path = index_item.original_source_path();
-        let absolute_path = repository_path.join(relative_path)?;
+        let absolute_path = repository_path.join(relative_path);
         Ok(RepositoryItem::from(
             &original_source_path,
             &absolute_path,
@@ -181,21 +183,22 @@ impl<'a> Repository {
     }
 
     pub fn data_weight(&self) -> Result<u64> {
-        let walkdir = self.data_dir()?.walk_dir()?;
-        let total_size = walkdir
-            .filter_map(|entry| entry.ok())
-            .filter_map(|entry| entry.metadata().ok())
-            .filter(|metadata| metadata.file_type == VfsFileType::File)
-            .fold(0, |acc, m| acc + m.len);
+        let walker = WalkDir::new(self.data_dir()?);
+        let total_size = walker
+            .into_iter()
+            .filter_map(|e| e.ok())
+            .filter_map(|e| e.metadata().ok())
+            .filter(|m| m.is_file())
+            .fold(0, |acc, m| acc + m.len());
         Ok(total_size)
     }
 
-    fn data_dir(&self) -> Result<VfsPath> {
-        Ok(self.path().join(DATA_DIR_NAME)?)
+    fn data_dir(&self) -> Result<PathBuf> {
+        Ok(self.path().join(DATA_DIR_NAME))
     }
 
-    fn calculate_id(source_path: &VfsPath) -> Result<ItemId> {
-        let source_file = source_path.open_file()?;
+    fn calculate_id(source_path: &Path) -> Result<ItemId> {
+        let source_file = File::open(source_path)?;
         let mut reader = BufReader::new(source_file);
         let mut hasher = Sha512::new();
 
@@ -210,17 +213,17 @@ mod must {
     use super::Repository;
     use crate::test::source::TestSource;
     use anyhow::Result;
-    use vfs::MemoryFS;
+    use tempfile::tempdir;
 
     #[test]
     fn have_size_equal_to_sum_of_sizes_of_backed_up_files() -> Result<()> {
         let file_size1 = 13;
         let file_size2 = 27;
         let source = TestSource::new()?;
-        let repository_path = MemoryFS::new().into();
-        Repository::init(&repository_path)?;
+        let repository_path = tempdir()?;
+        Repository::init(&repository_path.path())?;
 
-        let mut backup_repository = Repository::open(&repository_path)?;
+        let mut backup_repository = Repository::open(&repository_path.path())?;
         source.write_random_bytes_to_file("file1", file_size1)?;
         backup_repository.store(&source.file_path("file1")?)?;
 

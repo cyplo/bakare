@@ -1,14 +1,15 @@
+use std::path::Path;
+
 use crate::repository::{item::RepositoryItem, Repository};
 use anyhow::Result;
-use vfs::VfsPath;
 
 pub struct Engine<'a> {
     repository: &'a mut Repository,
-    target_path: &'a VfsPath,
+    target_path: &'a Path,
 }
 
 impl<'a> Engine<'a> {
-    pub fn new(repository: &'a mut Repository, target_path: &'a VfsPath) -> Result<Self> {
+    pub fn new(repository: &'a mut Repository, target_path: &'a Path) -> Result<Self> {
         Ok(Engine { repository, target_path })
     }
 

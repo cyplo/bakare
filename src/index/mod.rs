@@ -1,8 +1,7 @@
-use std::collections::hash_map::Iter;
 use std::collections::HashMap;
+use std::{collections::hash_map::Iter, path::Path};
 
 use serde::{Deserialize, Serialize};
-use vfs::VfsPath;
 
 use crate::index::item::IndexItem;
 use crate::repository::ItemId;
@@ -29,15 +28,15 @@ impl Index {
         })
     }
 
-    pub fn remember(&mut self, original_source_path: &VfsPath, relative_path: &str, id: ItemId) {
+    pub fn remember(&mut self, original_source_path: &Path, relative_path: &str, id: ItemId) {
         let item = if let Some(old) = self
             .newest_items_by_source_path
-            .get(&original_source_path.as_str().to_string())
+            .get(&original_source_path.to_string_lossy().to_string())
         {
             old.next_version(id, relative_path.to_string())
         } else {
             IndexItem::from(
-                original_source_path.as_str().to_string(),
+                original_source_path.to_string_lossy().to_string(),
                 relative_path.to_string(),
                 id,
                 Version::default(),
@@ -46,11 +45,14 @@ impl Index {
 
         self.items_by_file_id.insert(item.id(), item.clone());
         self.newest_items_by_source_path
-            .insert(original_source_path.as_str().to_string(), item);
+            .insert(original_source_path.to_string_lossy().to_string(), item);
     }
 
-    pub fn newest_item_by_source_path(&self, path: &VfsPath) -> Result<Option<IndexItem>> {
-        Ok(self.newest_items_by_source_path.get(&path.as_str().to_string()).cloned())
+    pub fn newest_item_by_source_path(&self, path: &Path) -> Result<Option<IndexItem>> {
+        Ok(self
+            .newest_items_by_source_path
+            .get(&path.to_string_lossy().to_string())
+            .cloned())
     }
 
     pub fn item_by_id(&self, id: &ItemId) -> Result<Option<IndexItem>> {
