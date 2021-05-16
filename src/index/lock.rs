@@ -69,7 +69,7 @@ impl Lock {
                 break;
             }
         }
-        if locks.iter().count() == 0 {
+        if locks.is_empty() {
             return Ok(false);
         }
         Ok(only_mine)
