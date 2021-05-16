@@ -38,7 +38,7 @@ pub fn decode(bytes: &[u8]) -> Result<Vec<u8>> {
 
     for buffer in decoded_blocks {
         for byte in buffer.data() {
-            result.push(byte.clone());
+            result.push(*byte);
         }
     }
 
@@ -88,7 +88,7 @@ mod must {
         let size = encoded.len();
         let corrupt_byte_index = rand::thread_rng().gen_range::<usize, _>(0..size);
 
-        let mut corrupted = Vec::from(encoded);
+        let mut corrupted = encoded;
         corrupted[corrupt_byte_index] = rand::thread_rng().gen::<u8>();
 
         let decoded = decode(&corrupted)?;
