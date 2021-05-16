@@ -45,7 +45,7 @@ mod must {
             for j in 0..files_per_backup_number {
                 let id = file_id(i, j);
                 let file = all_restored_files.iter().find(|f| f.filename() == id);
-                assert!(file.unwrap().exists(), "file {:?} does not exist", file);
+                assert!(file.unwrap().exists()?, "file {:?} does not exist", file);
                 let contents = file.unwrap().read_to_string()?;
                 assert_eq!(id.to_string(), contents.to_owned());
             }

@@ -50,7 +50,7 @@ impl RepositoryItem {
             .ok_or_else(|| anyhow!("cannot compute parent path for {}", &target_path.as_str()))?;
         log::debug!("[{}] saving data to {}", getpid(), target_path.as_str());
         parent.create_dir_all()?;
-        if !self.absolute_path.exists() {
+        if !self.absolute_path.exists()? {
             return Err(anyhow!("corrupted repository"));
         }
         self.absolute_path.copy_file(&target_path)?;

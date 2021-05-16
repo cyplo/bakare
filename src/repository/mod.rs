@@ -133,7 +133,7 @@ impl<'a> Repository {
             .parent()
             .ok_or_else(|| anyhow!("cannot compute parent path for {}", &destination.as_str()))?;
         parent.create_dir_all()?;
-        if !destination.exists() {
+        if !destination.exists()? {
             source_path.copy_file(&destination)?;
         }
         let destination_path = Path::new(destination.as_str());

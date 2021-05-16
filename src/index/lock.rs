@@ -35,7 +35,7 @@ impl Lock {
     }
 
     fn delete_lock_file(&self) -> Result<()> {
-        if self.path.exists() {
+        if self.path.exists()? {
             self.path.remove_file()?;
         }
         Ok(())
@@ -46,7 +46,7 @@ impl Lock {
         let _ = Lock::create_lock_file(lock_id, index_directory);
         while !Lock::sole_lock(lock_id, index_directory)? {
             let path = Lock::lock_file_path(index_directory, lock_id)?;
-            if path.exists() {
+            if path.exists()? {
                 path.remove_file()?;
             }
             let sleep_duration = time::Duration::from_millis((OsRng.next_u32() % 64).into());

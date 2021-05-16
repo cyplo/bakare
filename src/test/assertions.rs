@@ -147,7 +147,7 @@ pub mod in_memory {
 
     pub fn get_sorted_files_recursively(path: &VfsPath) -> Result<Vec<VfsPath>> {
         assert!(
-            path.exists(),
+            path.exists()?,
             "[get_sorted_files_recursively] invoked on a path that does not exist: {:?}",
             path
         );
@@ -172,7 +172,7 @@ pub mod in_memory {
 
     fn assert_target_file_contents(restored_path: &VfsPath, expected_contents: &[u8]) -> Result<()> {
         let mut actual_contents = vec![];
-        assert!(restored_path.exists(), "expected '{}' to be there", restored_path.as_str());
+        assert!(restored_path.exists()?, "expected '{}' to be there", restored_path.as_str());
         restored_path.open_file()?.read_to_end(&mut actual_contents)?;
         assert_eq!(expected_contents, actual_contents);
         Ok(())

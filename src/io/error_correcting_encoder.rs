@@ -4,7 +4,7 @@ use anyhow::*;
 use reed_solomon::Encoder;
 use reed_solomon::{Buffer, Decoder};
 
-const BLOCK_SIZE: usize = 64;
+const BLOCK_SIZE: usize = 255 - ECC_LENGTH;
 const ECC_LENGTH: usize = 8;
 
 // TODO: make the API streaming friendly

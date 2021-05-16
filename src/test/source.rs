@@ -62,7 +62,7 @@ mod must {
             path = source.path().clone();
         }
 
-        assert!(!path.exists());
+        assert!(!path.exists()?);
         Ok(())
     }
 }

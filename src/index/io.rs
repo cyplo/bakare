@@ -15,7 +15,7 @@ use std::{cmp::max, io::Write};
 
 impl Index {
     pub fn load(repository_path: &VfsPath) -> Result<Self> {
-        if !repository_path.exists() {
+        if !repository_path.exists()? {
             let mut index = Index::new()?;
             index.save(repository_path)?;
         }
@@ -38,7 +38,7 @@ impl Index {
         let lock = Lock::lock(repository_path)?;
 
         let index_file_path = &Index::index_file_path_for_repository_path(repository_path)?;
-        if index_file_path.exists() {
+        if index_file_path.exists()? {
             let index = Index::load_from_file(&Index::index_file_path_for_repository_path(repository_path)?)?;
             self.merge_items_by_file_id(index.items_by_file_id);
             self.merge_newest_items(index.newest_items_by_source_path);
