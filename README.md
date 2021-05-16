@@ -9,7 +9,8 @@ Contributions are welcome :)
 
 - [x] simple deduplication of file data - don't store the same exact file data twice
 - [ ] advanced deduplication - store files that only changed slightly more efficiently
-- [ ] survive index corruption
+- [x] survive index corruption
+
 - fast
 - using max bandwidth
 - use max cpu
