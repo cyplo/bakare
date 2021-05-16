@@ -4,7 +4,7 @@ use anyhow::*;
 use reed_solomon::Encoder;
 use reed_solomon::{Buffer, Decoder};
 
-const BLOCK_SIZE: usize = 256;
+const BLOCK_SIZE: usize = 64;
 const ECC_LENGTH: usize = 8;
 
 // TODO: make the API streaming friendly
@@ -18,15 +18,12 @@ pub fn encode(bytes: &[u8]) -> Result<Vec<u8>> {
 
     let mut result = vec![];
 
-    dbg!(encoded_blocks.len());
     for buffer in encoded_blocks {
-        dbg!(buffer.bytes().count());
         for byte in buffer.bytes() {
             result.push(byte?);
         }
     }
 
-    dbg!(result.len());
     Ok(result)
 }
 
@@ -39,15 +36,12 @@ pub fn decode(bytes: &[u8]) -> Result<Vec<u8>> {
 
     let mut result = vec![];
 
-    dbg!(decoded_blocks.len());
     for buffer in decoded_blocks {
-        dbg!(buffer.bytes().count());
         for byte in buffer.data() {
             result.push(byte.clone());
         }
     }
 
-    dbg!(result.len());
     Ok(result)
 }
 

@@ -13,7 +13,6 @@ mod must {
         source.write_text_to_file("second", "some contents").unwrap();
         source.write_text_to_file("third", "some other contents").unwrap();
 
-        dbg!("setup done");
         assert_same_after_restore(source.path())
     }
 
