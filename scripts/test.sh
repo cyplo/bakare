@@ -10,4 +10,3 @@ cargo clippy --all-targets --all-features -- -D warnings
 cargo check --frozen
 cargo test --all-targets
 cargo test --all-targets --all-features
-cargo test --all-targets --all-features -- --ignored
