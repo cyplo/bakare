@@ -72,7 +72,7 @@ impl Index {
             Some(parent) => Ok(fs::create_dir_all(parent)),
         }??;
 
-        let serialised = serde_json::to_string(&self)?;
+        let serialised = serde_json::to_string_pretty(&self)?;
 
         let bytes = serialised.as_bytes();
         let encoded = error_correcting_encoder::encode(bytes)?;

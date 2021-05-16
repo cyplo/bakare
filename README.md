@@ -10,7 +10,7 @@ Contributions are welcome :)
 - [x] simple deduplication of file data - don't store the same exact file data twice
 - [ ] advanced deduplication - store files that only changed slightly more efficiently
 - [x] survive index corruption
-
+- [ ] resilient towards interrupting the backup (create index checkpoints etc)
 - fast
 - using max bandwidth
 - use max cpu

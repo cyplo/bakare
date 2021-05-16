@@ -7,7 +7,6 @@ license = "AGPL-3.0"
 description = "modern and simple, yet efficient backup solution"
 
 [dependencies]
-cacache = "8"
 anyhow = "1.0"
 atomicwrites = "0.3"
 base64 = "0.13"
@@ -32,14 +31,19 @@ uuid = { version = "0.8", features = ["v4"] }
 walkdir = "2.3"
 
 [dev-dependencies]
+criterion = "0.3"
+pretty_assertions = "0.7"
 proptest = "1"
 two-rusty-forks = "0.4.0"
-pretty_assertions = "0.7"
 
 [dev-dependencies.cargo-husky]
 version = "1"
 default-features = false
 features = ["run-for-all", "prepush-hook", "run-cargo-check", "run-cargo-test", "run-cargo-clippy", "run-cargo-fmt"]
+
+[[bench]]
+name = "bench"
+harness = false
 
 [profile.release]
 debug = 1
