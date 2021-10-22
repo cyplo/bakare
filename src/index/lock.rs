@@ -71,26 +71,25 @@ impl Lock {
     fn sole_lock(lock_id: Uuid, index_directory: &Path) -> Result<bool> {
         let my_lock_file_path = Lock::lock_file_path(index_directory, lock_id)?;
 
-        let walker = WalkDir::new(index_directory);
-        let all_locks: Vec<_> = walker
-            .into_iter()
-            .filter_map(|e| e.ok())
-            .filter(|e| e.file_name().to_string_lossy().ends_with(FILE_EXTENSION))
-            .collect();
-        if all_locks.len() != 1 {
+        let all_locks_count =
+            Lock::count_files(|e| e.file_name().to_string_lossy().ends_with(FILE_EXTENSION), index_directory)?;
+        if all_locks_count != 1 {
             return Ok(false);
         }
-        let walker = WalkDir::new(index_directory);
-        let my_locks: Vec<_> = walker
-            .into_iter()
-            .filter_map(|e| e.ok())
-            .filter(|e| e.path() == my_lock_file_path)
-            .collect();
-        if my_locks.len() != 1 {
+        let my_locks_count = Lock::count_files(|e| e.path() == my_lock_file_path, index_directory)?;
+        if my_locks_count != 1 {
             return Ok(false);
         }
-        let result = all_locks.first().unwrap().path() == my_locks.first().unwrap().path();
-        Ok(result)
+        Ok(true)
+    }
+
+    fn count_files<P>(predicate: P, directory: &Path) -> Result<usize>
+    where
+        P: Fn(&walkdir::DirEntry) -> bool,
+    {
+        let walker = WalkDir::new(directory);
+        let matching = walker.into_iter().filter_map(|e| e.ok()).filter(predicate);
+        Ok(matching.count())
     }
 
     fn create_lock_file(lock_id: Uuid, index_directory: &Path) -> Result<()> {
