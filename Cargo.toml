@@ -2,7 +2,8 @@
 name = "bakare"
 version = "0.1.0"
 authors = ["Cyryl Płotnicki <cyplo@cyplo.dev>"]
-edition = "2018"
+edition = "2021"
+rust-version = "1.56"
 license = "AGPL-3.0"
 description = "modern and simple, yet efficient backup solution"
 

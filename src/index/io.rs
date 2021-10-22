@@ -144,7 +144,7 @@ mod must {
         let mut index = Index::new()?;
         let old_version = index.version;
 
-        index.save(&temp_dir.path())?;
+        index.save(temp_dir.path())?;
 
         let new_version = index.version;
 
@@ -158,8 +158,8 @@ mod must {
         let repository_path = tempdir()?;
         let mut original = Index::new()?;
 
-        original.save(&repository_path.path())?;
-        let loaded = Index::load(&repository_path.path())?;
+        original.save(repository_path.path())?;
+        let loaded = Index::load(repository_path.path())?;
 
         assert_eq!(original, loaded);
 

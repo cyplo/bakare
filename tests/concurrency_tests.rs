@@ -34,7 +34,7 @@ mod must {
         assert!(data_weight(&repository_path)? > 0);
 
         let target_path = tempdir()?;
-        let all_restored_files = restore_all(&repository_path, &target_path.path())?;
+        let all_restored_files = restore_all(&repository_path, target_path.path())?;
         assert_eq!(all_restored_files.len(), total_number_of_files);
 
         assert_all_files_in_place(parallel_backups_number, files_per_backup_number, &all_restored_files)?;
@@ -73,7 +73,7 @@ mod must {
                     child_pids.push(child);
                 }
                 Ok(ForkResult::Child) => {
-                    backup_process(*task_number, &repository_path, files_per_backup_number)?;
+                    backup_process(*task_number, repository_path, files_per_backup_number)?;
                     std::process::exit(0);
                 }
 
@@ -107,9 +107,9 @@ mod must {
 
     fn restore_all(repository_path: &Path, restore_target: &Path) -> Result<Vec<PathBuf>> {
         let mut restore_repository = Repository::open(repository_path)?;
-        let mut restore_engine = restore::Engine::new(&mut restore_repository, &restore_target)?;
+        let mut restore_engine = restore::Engine::new(&mut restore_repository, restore_target)?;
         restore_engine.restore_all()?;
-        get_sorted_files_recursively(&restore_target)
+        get_sorted_files_recursively(restore_target)
     }
 
     fn setup_logger() {

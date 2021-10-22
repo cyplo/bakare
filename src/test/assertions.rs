@@ -20,28 +20,28 @@ pub mod in_memory {
         let repository_path = tempdir()?;
         let restore_target = tempdir()?;
 
-        Repository::init(&repository_path.path())?;
+        Repository::init(repository_path.path())?;
         {
-            let mut backup_repository = Repository::open(&repository_path.path())?;
+            let mut backup_repository = Repository::open(repository_path.path())?;
             let mut backup_engine = backup::Engine::new(source_path, &mut backup_repository)?;
             backup_engine.backup()?;
         }
         {
-            let mut restore_repository = Repository::open(&repository_path.path())?;
+            let mut restore_repository = Repository::open(repository_path.path())?;
 
-            let mut restore_engine = restore::Engine::new(&mut restore_repository, &restore_target.path())?;
+            let mut restore_engine = restore::Engine::new(&mut restore_repository, restore_target.path())?;
             restore_engine.restore_all()?;
         }
 
-        assert_directory_trees_have_same_contents(source_path, &restore_target.path())?;
+        assert_directory_trees_have_same_contents(source_path, restore_target.path())?;
         Ok(())
     }
 
     pub fn assert_restored_file_contents(repository_path: &Path, source_file_full_path: &Path, contents: &[u8]) -> Result<()> {
         let mut restore_repository = Repository::open(repository_path)?;
-        let item = restore_repository.newest_item_by_source_path(&source_file_full_path)?;
+        let item = restore_repository.newest_item_by_source_path(source_file_full_path)?;
         let restore_target = tempdir()?;
-        let restore_engine = restore::Engine::new(&mut restore_repository, &restore_target.path())?;
+        let restore_engine = restore::Engine::new(&mut restore_repository, restore_target.path())?;
 
         restore_engine.restore(&item.unwrap())?;
         let source_file_relative_path = Path::new(source_file_full_path).strip_prefix("/")?;
@@ -56,9 +56,9 @@ pub mod in_memory {
         old_id: &ItemId,
     ) -> Result<()> {
         let mut restore_repository = Repository::open(repository_path)?;
-        let old_item = restore_repository.item_by_id(&old_id)?;
+        let old_item = restore_repository.item_by_id(old_id)?;
         let restore_target = tempdir()?;
-        let restore_engine = restore::Engine::new(&mut restore_repository, &restore_target.path())?;
+        let restore_engine = restore::Engine::new(&mut restore_repository, restore_target.path())?;
         restore_engine.restore(&old_item.unwrap())?;
         let source_file_relative_path = Path::new(source_file_full_path).strip_prefix("/")?;
         let restored_file_path = restore_target.path().join(&source_file_relative_path);
@@ -68,7 +68,7 @@ pub mod in_memory {
     pub fn newest_item(repository_path: &Path, source_file_full_path: &Path) -> Result<RepositoryItem> {
         let item = {
             let reading_repository = Repository::open(repository_path)?;
-            let item = reading_repository.newest_item_by_source_path(&source_file_full_path)?;
+            let item = reading_repository.newest_item_by_source_path(source_file_full_path)?;
             assert!(item.is_some());
             item.unwrap()
         };
@@ -78,7 +78,7 @@ pub mod in_memory {
     pub fn restore_all_from_reloaded_repository(repository_path: &Path, restore_target: &Path) -> Result<()> {
         {
             let mut restore_repository = Repository::open(repository_path)?;
-            let mut restore_engine = restore::Engine::new(&mut restore_repository, &restore_target)?;
+            let mut restore_engine = restore::Engine::new(&mut restore_repository, restore_target)?;
             restore_engine.restore_all()?;
             Ok(())
         }
@@ -114,7 +114,7 @@ pub mod in_memory {
     pub fn data_weight(repository_path: &Path) -> Result<u64> {
         {
             let repository = Repository::open(repository_path)?;
-            Ok(repository.data_weight()?)
+            repository.data_weight()
         }
     }
 

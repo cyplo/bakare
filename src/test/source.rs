@@ -35,7 +35,7 @@ impl TestSource {
     }
 
     pub fn path(&self) -> &Path {
-        &self.directory.path()
+        self.directory.path()
     }
 
     pub fn file_path(&self, filename: &str) -> Result<PathBuf> {

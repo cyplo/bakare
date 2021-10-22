@@ -162,7 +162,7 @@ impl<'a> Repository {
 
     pub fn newest_items(&self) -> RepositoryItemIterator {
         RepositoryItemIterator {
-            repository: &self,
+            repository: self,
             iterator: self.index.newest_items(),
         }
     }
@@ -174,7 +174,7 @@ impl<'a> Repository {
         let original_source_path = index_item.original_source_path();
         let absolute_path = repository_path.join(relative_path);
         Ok(RepositoryItem::from(
-            &original_source_path,
+            original_source_path,
             &absolute_path,
             relative_path,
             index_item.id(),
@@ -221,9 +221,9 @@ mod must {
         let file_size2 = 27;
         let source = TestSource::new()?;
         let repository_path = tempdir()?;
-        Repository::init(&repository_path.path())?;
+        Repository::init(repository_path.path())?;
 
-        let mut backup_repository = Repository::open(&repository_path.path())?;
+        let mut backup_repository = Repository::open(repository_path.path())?;
         source.write_random_bytes_to_file("file1", file_size1)?;
         backup_repository.store(&source.file_path("file1")?)?;
 

@@ -1,20 +1,14 @@
-let
-  moz_overlay = import (builtins.fetchTarball https://github.com/mozilla/nixpkgs-mozilla/archive/master.tar.gz);
-  nixpkgs = import <nixpkgs> { overlays = [ moz_overlay ]; };
-  channel = (nixpkgs.rustChannelOf { rustToolchain = ./rust-toolchain; });
-in
-  with nixpkgs;
-  stdenv.mkDerivation {
-    name = "bakare_shell";
-    buildInputs = [
-      channel.rust
-      linuxPackages.perf flamegraph cargo-flamegraph geeqie
-      cargo-edit cargo-udeps
-      cacert openssl openssh zlib
-      pkgconfig clang llvm kdbg lldb gdb
-      git
-    ];
-    shellHook = ''
-      export RUST_SRC_PATH="${channel.rust-src}/lib/rustlib/src/rust/src"
-    '';
+(import
+(
+  let
+    lock = builtins.fromJSON (builtins.readFile ./flake.lock);
+  in
+  fetchTarball {
+    url = "https://github.com/edolstra/flake-compat/archive/${lock.nodes.flake-compat.locked.rev}.tar.gz";
+    sha256 = lock.nodes.flake-compat.locked.narHash;
   }
+  )
+  {
+    src = ./.;
+  }).shellNix
+

@@ -21,6 +21,7 @@ const MAX_TIMEOUT_MILLIS: u16 = 8192;
 const FILE_EXTENSION: &str = ".lock";
 
 impl Lock {
+    #[allow(clippy::self_named_constructors)]
     pub fn lock(index_directory: &Path) -> Result<Self> {
         Lock::lock_with_timeout(index_directory, MAX_TIMEOUT_MILLIS)
     }
@@ -128,7 +129,7 @@ mod must {
         let temp_dir = tempdir()?;
         let initial_number_of_entries = temp_dir.path().read_dir()?.count();
         {
-            let _lock = Lock::lock(&temp_dir.path())?;
+            let _lock = Lock::lock(temp_dir.path())?;
         }
         let entries = temp_dir.path().read_dir()?.count();
 
@@ -143,7 +144,7 @@ mod must {
             fail::cfg("create-lock-file", "90%10*return(some lock file creation error)->off").unwrap();
             let temp_dir = tempdir().unwrap();
 
-            let lock = Lock::lock(&temp_dir.path()).unwrap();
+            let lock = Lock::lock(temp_dir.path()).unwrap();
             lock.release().unwrap();
         }
     }
@@ -155,7 +156,7 @@ mod must {
             fail::cfg("create-lock-file", "return(persistent lock file creation error)").unwrap();
             let temp_dir = tempdir().unwrap();
 
-            assert!(Lock::lock_with_timeout(&temp_dir.path(), 1).is_err());
+            assert!(Lock::lock_with_timeout(temp_dir.path(), 1).is_err());
         }
     }
 }

@@ -5,3 +5,6 @@
 perf*
 flame*
 .gdb*
+
+.direnv/
+
