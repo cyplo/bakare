@@ -26,6 +26,7 @@ pub struct Repository {
     /// path to where the repository is stored on disk
     path: PathBuf,
     index: Index,
+    secret: String,
 }
 
 const DATA_DIR_NAME: &str = "data";
@@ -97,20 +98,21 @@ impl Debug for ItemId {
 }
 
 impl<'a> Repository {
-    pub fn init(path: &Path) -> Result<Repository> {
+    pub fn init(path: &Path, secret: &str) -> Result<Repository> {
         fs::create_dir_all(path)?;
         let mut index = Index::new()?;
-        index.save(path)?;
-        let repository = Repository::open(path)?;
+        index.save(path, secret.as_bytes())?;
+        let repository = Repository::open(path, secret)?;
         fs::create_dir_all(repository.data_dir()?)?;
         Ok(repository)
     }
 
-    pub fn open(path: &Path) -> Result<Repository> {
-        let index = Index::load(path)?;
+    pub fn open(path: &Path, secret: &str) -> Result<Repository> {
+        let index = Index::load(path, secret.as_bytes())?;
         let repository = Repository {
             path: path.to_path_buf(),
             index,
+            secret: secret.to_owned(),
         };
 
         Ok(repository)
@@ -121,7 +123,7 @@ impl<'a> Repository {
     }
 
     pub fn save_index(&mut self) -> Result<()> {
-        self.index.save(&self.path)
+        self.index.save(&self.path, self.secret.as_bytes())
     }
 
     pub fn store(&mut self, source_path: &Path) -> Result<()> {
@@ -232,9 +234,10 @@ mod must {
         let file_size2 = 27;
         let source = TestSource::new()?;
         let repository_path = tempdir()?;
-        Repository::init(repository_path.path())?;
+        let secret = "some secret";
+        Repository::init(repository_path.path(), secret)?;
 
-        let mut backup_repository = Repository::open(repository_path.path())?;
+        let mut backup_repository = Repository::open(repository_path.path(), secret)?;
         source.write_random_bytes_to_file("file1", file_size1)?;
         backup_repository.store(&source.file_path("file1")?)?;
 

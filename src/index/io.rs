@@ -2,8 +2,12 @@ use std::{
     collections::HashMap,
     fs::{self, File},
     io::Read,
+    os::unix::prelude::OsStrExt,
     path::{Path, PathBuf},
 };
+
+use chacha20poly1305::aead::{Aead, NewAead};
+use chacha20poly1305::{Key, XChaCha20Poly1305, XNonce}; // Or `XChaCha20Poly1305`
 
 use uuid::Uuid;
 
@@ -18,14 +22,14 @@ use nix::unistd::getpid;
 use std::{cmp::max, io::Write};
 
 impl Index {
-    pub fn load(repository_path: &Path) -> Result<Self> {
+    pub fn load(repository_path: &Path, secret: &[u8]) -> Result<Self> {
         if !repository_path.exists() {
             let mut index = Index::new()?;
-            index.save(repository_path)?;
+            index.save(repository_path, secret)?;
         }
         let lock = Lock::lock(repository_path)?;
         let index_file_path = &Index::index_file_path_for_repository_path(repository_path)?;
-        let index = Index::load_from_file(index_file_path)?;
+        let index = Index::load_from_file(index_file_path, secret)?;
         lock.release()?;
         log::debug!(
             "[{}] loaded index from {}, version: {}; {} items",
@@ -37,19 +41,19 @@ impl Index {
         Ok(index)
     }
 
-    pub fn save(&mut self, repository_path: &Path) -> Result<()> {
+    pub fn save(&mut self, repository_path: &Path, secret: &[u8]) -> Result<()> {
         let lock_id = Uuid::new_v4();
         let lock = Lock::lock(repository_path)?;
 
         let index_file_path = &Index::index_file_path_for_repository_path(repository_path)?;
         if index_file_path.exists() {
-            let index = Index::load_from_file(&Index::index_file_path_for_repository_path(repository_path)?)?;
+            let index = Index::load_from_file(&Index::index_file_path_for_repository_path(repository_path)?, secret)?;
             self.merge_items_by_file_id(index.items_by_file_id);
             self.merge_newest_items(index.newest_items_by_source_path);
             self.version = max(self.version, index.version);
         }
         self.version = self.version.next();
-        self.write_index_to_file(index_file_path)?;
+        self.write_index_to_file(index_file_path, secret)?;
         lock.release()?;
         log::debug!(
             "[{}] saved index version {} with lock id {} to {}; {} items",
@@ -62,7 +66,7 @@ impl Index {
         Ok(())
     }
 
-    fn write_index_to_file(&mut self, index_file_path: &Path) -> Result<()> {
+    fn write_index_to_file(&mut self, index_file_path: &Path, secret: &[u8]) -> Result<()> {
         let parent = index_file_path.parent();
         match parent {
             None => Err(anyhow!(format!(
@@ -75,7 +79,17 @@ impl Index {
         let serialised = serde_json::to_string_pretty(&self)?;
 
         let bytes = serialised.as_bytes();
-        let encoded = error_correcting_encoder::encode(bytes)?;
+
+        let mut hash = [0; 32];
+        blake::hash(256, secret, &mut hash)?;
+        let key = Key::from_slice(&hash);
+        let cipher = XChaCha20Poly1305::new(key);
+
+        blake::hash(256, index_file_path.as_os_str().as_bytes(), &mut hash)?;
+        let nonce = XNonce::from_slice(&hash[0..(192 / 8)]);
+
+        let encrypted = cipher.encrypt(nonce, bytes.as_ref()).map_err(|e| anyhow!("{}", e))?;
+        let encoded = error_correcting_encoder::encode(&encrypted)?;
 
         {
             let mut file = File::create(index_file_path)?;
@@ -97,13 +111,22 @@ impl Index {
         }
     }
 
-    fn load_from_file(index_file_path: &Path) -> Result<Self> {
+    fn load_from_file(index_file_path: &Path, secret: &[u8]) -> Result<Self> {
         let mut file = File::open(index_file_path)?;
         let mut encoded = vec![];
         file.read_to_end(&mut encoded)?;
 
         let decoded = error_correcting_encoder::decode(&encoded)?;
-        let index_text = String::from_utf8(decoded)?;
+
+        let mut hash = [0; 32];
+        blake::hash(256, secret, &mut hash)?;
+        let key = Key::from_slice(&hash);
+        let cipher = XChaCha20Poly1305::new(key);
+        blake::hash(256, index_file_path.as_os_str().as_bytes(), &mut hash)?;
+        let nonce = XNonce::from_slice(&hash[0..(192 / 8)]);
+
+        let decrypted = cipher.decrypt(nonce, decoded.as_ref()).map_err(|e| anyhow!("{}", e))?;
+        let index_text = String::from_utf8(decrypted)?;
 
         let index: Index = serde_json::from_str(&index_text)
             .context(format!("cannot read index from: {}", index_file_path.to_string_lossy()))?;
@@ -144,7 +167,8 @@ mod must {
         let mut index = Index::new()?;
         let old_version = index.version;
 
-        index.save(temp_dir.path())?;
+        let secret = b"some secret";
+        index.save(temp_dir.path(), secret)?;
 
         let new_version = index.version;
 
@@ -155,11 +179,13 @@ mod must {
 
     #[test]
     fn be_same_when_loaded_from_disk() -> Result<()> {
+        femme::with_level(log::LevelFilter::Debug);
         let repository_path = tempdir()?;
         let mut original = Index::new()?;
 
-        original.save(repository_path.path())?;
-        let loaded = Index::load(repository_path.path())?;
+        let secret = b"some secret";
+        original.save(repository_path.path(), secret)?;
+        let loaded = Index::load(repository_path.path(), secret)?;
 
         assert_eq!(original, loaded);
 

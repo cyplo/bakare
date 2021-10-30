@@ -23,18 +23,20 @@ mod must {
         let dir = tempdir()?;
         let repository_path = dir.path();
         let repository_path = repository_path.join(&format!("repository-{}", getpid()));
-        Repository::init(&repository_path)?;
+        let secret = "some secret";
+        Repository::init(&repository_path, secret)?;
 
         let parallel_backups_number = 16;
         let files_per_backup_number = 16;
         let total_number_of_files = parallel_backups_number * files_per_backup_number;
 
-        let finished_backup_runs = backup_in_parallel(&repository_path, parallel_backups_number, files_per_backup_number)?;
+        let finished_backup_runs =
+            backup_in_parallel(&repository_path, secret, parallel_backups_number, files_per_backup_number)?;
         assert_eq!(finished_backup_runs.len(), parallel_backups_number);
-        assert!(data_weight(&repository_path)? > 0);
+        assert!(data_weight(&repository_path, secret)? > 0);
 
         let target_path = tempdir()?;
-        let all_restored_files = restore_all(&repository_path, target_path.path())?;
+        let all_restored_files = restore_all(&repository_path, secret, target_path.path())?;
         assert_eq!(all_restored_files.len(), total_number_of_files);
 
         assert_all_files_in_place(parallel_backups_number, files_per_backup_number, &all_restored_files)?;
@@ -62,6 +64,7 @@ mod must {
 
     fn backup_in_parallel(
         repository_path: &Path,
+        secret: &str,
         parallel_backups_number: usize,
         files_per_backup_number: usize,
     ) -> Result<Vec<usize>> {
@@ -73,7 +76,7 @@ mod must {
                     child_pids.push(child);
                 }
                 Ok(ForkResult::Child) => {
-                    backup_process(*task_number, repository_path, files_per_backup_number)?;
+                    backup_process(*task_number, repository_path, secret, files_per_backup_number)?;
                     std::process::exit(0);
                 }
 
@@ -93,8 +96,8 @@ mod must {
         Ok(task_numbers)
     }
 
-    fn backup_process(task_number: usize, repository_path: &Path, files_per_backup_number: usize) -> Result<()> {
-        let mut repository = Repository::open(repository_path)?;
+    fn backup_process(task_number: usize, repository_path: &Path, secret: &str, files_per_backup_number: usize) -> Result<()> {
+        let mut repository = Repository::open(repository_path, secret)?;
         let source = TestSource::new().unwrap();
         let mut backup_engine = backup::Engine::new(source.path(), &mut repository)?;
         for i in 0..files_per_backup_number {
@@ -105,8 +108,8 @@ mod must {
         Ok(())
     }
 
-    fn restore_all(repository_path: &Path, restore_target: &Path) -> Result<Vec<PathBuf>> {
-        let mut restore_repository = Repository::open(repository_path)?;
+    fn restore_all(repository_path: &Path, secret: &str, restore_target: &Path) -> Result<Vec<PathBuf>> {
+        let mut restore_repository = Repository::open(repository_path, secret)?;
         let mut restore_engine = restore::Engine::new(&mut restore_repository, restore_target)?;
         restore_engine.restore_all()?;
         get_sorted_files_recursively(restore_target)

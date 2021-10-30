@@ -19,15 +19,15 @@ pub mod in_memory {
     pub fn assert_same_after_restore(source_path: &Path) -> Result<()> {
         let repository_path = tempdir()?;
         let restore_target = tempdir()?;
-
-        Repository::init(repository_path.path())?;
+        let secret = "some secret";
+        Repository::init(repository_path.path(), secret)?;
         {
-            let mut backup_repository = Repository::open(repository_path.path())?;
+            let mut backup_repository = Repository::open(repository_path.path(), secret)?;
             let mut backup_engine = backup::Engine::new(source_path, &mut backup_repository)?;
             backup_engine.backup()?;
         }
         {
-            let mut restore_repository = Repository::open(repository_path.path())?;
+            let mut restore_repository = Repository::open(repository_path.path(), secret)?;
 
             let mut restore_engine = restore::Engine::new(&mut restore_repository, restore_target.path())?;
             restore_engine.restore_all()?;
@@ -37,8 +37,13 @@ pub mod in_memory {
         Ok(())
     }
 
-    pub fn assert_restored_file_contents(repository_path: &Path, source_file_full_path: &Path, contents: &[u8]) -> Result<()> {
-        let mut restore_repository = Repository::open(repository_path)?;
+    pub fn assert_restored_file_contents(
+        repository_path: &Path,
+        secret: &str,
+        source_file_full_path: &Path,
+        contents: &[u8],
+    ) -> Result<()> {
+        let mut restore_repository = Repository::open(repository_path, secret)?;
         let item = restore_repository.newest_item_by_source_path(source_file_full_path)?;
         let restore_target = tempdir()?;
         let restore_engine = restore::Engine::new(&mut restore_repository, restore_target.path())?;
@@ -51,11 +56,12 @@ pub mod in_memory {
 
     pub fn assert_restored_from_version_has_contents(
         repository_path: &Path,
+        secret: &str,
         source_file_full_path: &Path,
         old_contents: &[u8],
         old_id: &ItemId,
     ) -> Result<()> {
-        let mut restore_repository = Repository::open(repository_path)?;
+        let mut restore_repository = Repository::open(repository_path, secret)?;
         let old_item = restore_repository.item_by_id(old_id)?;
         let restore_target = tempdir()?;
         let restore_engine = restore::Engine::new(&mut restore_repository, restore_target.path())?;
@@ -65,9 +71,9 @@ pub mod in_memory {
         assert_target_file_contents(&restored_file_path, old_contents)
     }
 
-    pub fn newest_item(repository_path: &Path, source_file_full_path: &Path) -> Result<RepositoryItem> {
+    pub fn newest_item(repository_path: &Path, secret: &str, source_file_full_path: &Path) -> Result<RepositoryItem> {
         let item = {
-            let reading_repository = Repository::open(repository_path)?;
+            let reading_repository = Repository::open(repository_path, secret)?;
             let item = reading_repository.newest_item_by_source_path(source_file_full_path)?;
             assert!(item.is_some());
             item.unwrap()
@@ -75,9 +81,9 @@ pub mod in_memory {
         Ok(item)
     }
 
-    pub fn restore_all_from_reloaded_repository(repository_path: &Path, restore_target: &Path) -> Result<()> {
+    pub fn restore_all_from_reloaded_repository(repository_path: &Path, secret: &str, restore_target: &Path) -> Result<()> {
         {
-            let mut restore_repository = Repository::open(repository_path)?;
+            let mut restore_repository = Repository::open(repository_path, secret)?;
             let mut restore_engine = restore::Engine::new(&mut restore_repository, restore_target)?;
             restore_engine.restore_all()?;
             Ok(())
@@ -87,22 +93,30 @@ pub mod in_memory {
     pub fn backup_file_with_text_contents(
         source: &TestSource,
         repository_path: &Path,
+        secret: &str,
         source_file_relative_path: &str,
         contents: &str,
     ) -> Result<()> {
         {
-            backup_file_with_byte_contents(source, repository_path, source_file_relative_path, contents.as_bytes())
+            backup_file_with_byte_contents(
+                source,
+                repository_path,
+                secret,
+                source_file_relative_path,
+                contents.as_bytes(),
+            )
         }
     }
 
     pub fn backup_file_with_byte_contents(
         source: &TestSource,
         repository_path: &Path,
+        secret: &str,
         source_file_relative_path: &str,
         contents: &[u8],
     ) -> Result<()> {
         {
-            let mut backup_repository = Repository::open(repository_path)?;
+            let mut backup_repository = Repository::open(repository_path, secret)?;
 
             let mut backup_engine = backup::Engine::new(source.path(), &mut backup_repository)?;
             source.write_bytes_to_file(source_file_relative_path, contents).unwrap();
@@ -111,9 +125,9 @@ pub mod in_memory {
         }
     }
 
-    pub fn data_weight(repository_path: &Path) -> Result<u64> {
+    pub fn data_weight(repository_path: &Path, secret: &str) -> Result<u64> {
         {
-            let repository = Repository::open(repository_path)?;
+            let repository = Repository::open(repository_path, secret)?;
             repository.data_weight()
         }
     }
