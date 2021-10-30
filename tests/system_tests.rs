@@ -1,11 +1,13 @@
 #[cfg(test)]
 mod must {
-    use anyhow::Result;
     use bakare::backup;
-
     use bakare::test::assertions::in_memory::*;
     use bakare::{repository::Repository, test::source::TestSource};
+
+    use anyhow::Result;
+    use proptest::prelude::*;
     use tempfile::tempdir;
+    use walkdir::WalkDir;
 
     #[test]
     fn restore_multiple_files() -> Result<()> {
@@ -113,25 +115,40 @@ mod must {
         Ok(())
     }
 
-    #[test]
-    fn allow_searching_by_filename() -> Result<()> {
-        let source = TestSource::new().unwrap();
-        let dir = tempdir()?;
-        let repository_path = dir.path();
-        Repository::init(repository_path)?;
+    proptest! {
+        #[test]
+        fn allow_searching_by_filename(filename in "[a-zA-Z]{3,}"){
+            let source = TestSource::new().unwrap();
+            let dir = tempdir()?;
+            let repository_path = dir.path();
+            Repository::init(repository_path).unwrap();
 
-        backup_file_with_text_contents(&source, repository_path, "first", "first contents")?;
-        backup_file_with_text_contents(&source, repository_path, "second", "second contents")?;
-        backup_file_with_text_contents(&source, repository_path, "third", "third contents")?;
+            backup_file_with_text_contents(&source, repository_path, &filename, "some contents").unwrap();
 
-        let repository = Repository::open(repository_path)?;
+            let repository = Repository::open(repository_path).unwrap();
 
-        let second_file = repository.find_latest_by_path_fragment("second")?.unwrap();
-        assert_eq!(second_file.original_source_path(), source.file_path("second")?.as_os_str());
+            let second_file = repository.find_latest_by_path_fragment(&filename).unwrap().unwrap();
+            assert_eq!(second_file.original_source_path(), source.file_path(&filename).unwrap().as_os_str());
+        }
 
-        Ok(())
+        #[test]
+        fn not_leak_file_names(filename in "[a-zA-Z]{4,}"){
+            let source = TestSource::new().unwrap();
+            let dir = tempdir()?;
+            let repository_path = dir.path();
+            Repository::init(repository_path).unwrap();
+
+            backup_file_with_text_contents(&source, repository_path, &filename, "some contents").unwrap();
+
+            let walker = WalkDir::new(repository_path);
+            let matching_paths = walker
+                .into_iter()
+                .filter_map(|e| e.ok())
+                .filter(|e| e.path().as_os_str().to_string_lossy().contains(&filename));
+
+            assert_eq!(matching_paths.count(), 0);
+        }
     }
-
     // TODO: encryption
     // TODO: resume from sleep while backup in progress
 }
