@@ -160,6 +160,17 @@ impl<'a> Repository {
         }
     }
 
+    pub fn find_latest_by_path_fragment(&self, path_fragment: &str) -> Result<Option<RepositoryItem>> {
+        let index_item = self
+            .index
+            .newest_items()
+            .find(|item| item.original_source_path().contains(path_fragment));
+        match index_item {
+            None => Ok(None),
+            Some(item) => Ok(Some(self.repository_item(&item)?)),
+        }
+    }
+
     pub fn newest_items(&self) -> RepositoryItemIterator {
         RepositoryItemIterator {
             repository: self,

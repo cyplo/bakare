@@ -2,6 +2,7 @@
 mod must {
     use anyhow::Result;
     use bakare::backup;
+
     use bakare::test::assertions::in_memory::*;
     use bakare::{repository::Repository, test::source::TestSource};
     use tempfile::tempdir;
@@ -111,7 +112,26 @@ mod must {
         assert!(error.is_err());
         Ok(())
     }
-    // TODO: index corruption
+
+    #[test]
+    fn allow_searching_by_filename() -> Result<()> {
+        let source = TestSource::new().unwrap();
+        let dir = tempdir()?;
+        let repository_path = dir.path();
+        Repository::init(repository_path)?;
+
+        backup_file_with_text_contents(&source, repository_path, "first", "first contents")?;
+        backup_file_with_text_contents(&source, repository_path, "second", "second contents")?;
+        backup_file_with_text_contents(&source, repository_path, "third", "third contents")?;
+
+        let repository = Repository::open(repository_path)?;
+
+        let second_file = repository.find_latest_by_path_fragment("second")?.unwrap();
+        assert_eq!(second_file.original_source_path(), source.file_path("second")?.as_os_str());
+
+        Ok(())
+    }
+
     // TODO: encryption
     // TODO: resume from sleep while backup in progress
 }
