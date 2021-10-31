@@ -179,7 +179,6 @@ mod must {
 
     #[test]
     fn be_same_when_loaded_from_disk() -> Result<()> {
-        femme::with_level(log::LevelFilter::Debug);
         let repository_path = tempdir()?;
         let mut original = Index::new()?;
 

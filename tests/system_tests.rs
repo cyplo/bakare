@@ -175,7 +175,7 @@ mod must {
             backup_file_with_text_contents(&source, repository_path, secret, &test_filename, "some contents").unwrap();
 
             let all_repo_files = get_sorted_files_recursively(repository_path).unwrap();
-            assert!(all_repo_files.len() > 0);
+            assert!(!all_repo_files.is_empty());
 
             for filepath in all_repo_files {
                 let mut file = File::open(&filepath).unwrap();
