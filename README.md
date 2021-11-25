@@ -68,3 +68,7 @@ Errors 0
 
 - crashes with OOM sometimes
 - corrupts repo if you suspend one backup process and launch another from a different computer
+
+## TODOs
+
+- [ ] compare with Kopia
