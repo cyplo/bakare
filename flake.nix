@@ -14,8 +14,7 @@
       let
         pkgs = nixpkgs.legacyPackages."${system}";
         naersk-lib = naersk.lib."${system}";
-      in
-      rec {
+      in rec {
         # `nix build`
         packages.bakare = naersk-lib.buildPackage {
           pname = "bakare";
@@ -24,9 +23,7 @@
         defaultPackage = packages.bakare;
 
         # `nix run`
-        apps.bakare = utils.lib.mkApp {
-          drv = packages.bakare;
-        };
+        apps.bakare = utils.lib.mkApp { drv = packages.bakare; };
         defaultApp = apps.bakare;
 
         # `nix develop`
@@ -49,7 +46,8 @@
             rustc
             rustfmt
           ];
-          RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
+          RUST_SRC_PATH =
+            "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
         };
       });
 }
