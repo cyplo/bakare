@@ -96,7 +96,7 @@ impl Lock {
         let lock_file_path = Lock::lock_file_path(index_directory, lock_id)?;
         fail_point!("create-lock-file", |e: Option<String>| Err(anyhow!(e.unwrap())));
         let mut file = File::create(lock_file_path)?;
-        let lock_id_text = lock_id.to_hyphenated().to_string();
+        let lock_id_text = lock_id.as_hyphenated().to_string();
         let lock_id_bytes = lock_id_text.as_bytes();
         Ok(file.write_all(lock_id_bytes)?)
     }
